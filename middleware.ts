@@ -4,28 +4,56 @@ import type { NextRequest } from "next/server";
 /**
  * Middleware для защиты маршрутов
  * Проверяет сессию и перенаправляет пользователей
+ * Добавлена Basic Auth защита для тестовой среды
  */
 export function middleware(request: NextRequest) {
-  const sessionCookie = request.cookies.get("session");
-
-  // Защита страницы verify-code
-  if (request.nextUrl.pathname.startsWith("/verify-code")) {
-    if (!sessionCookie) {
-      console.log("[MIDDLEWARE] Нет сессии, редирект на вход");
-      return NextResponse.redirect(new URL("/sign-in", request.url));
+  // Basic Auth защита (только если включена через переменную окружения)
+  const enableBasicAuth = process.env.ENABLE_BASIC_AUTH === "true";
+  if (enableBasicAuth) {
+    const authHeader = request.headers.get("authorization");
+    
+    // Настройки Basic Auth (из переменных окружения или дефолтные)
+    const authUser = process.env.BASIC_AUTH_USER || "tester";
+    const authPass = process.env.BASIC_AUTH_PASS || "test123";
+    
+    // Проверяем Basic Auth
+    if (!authHeader || !authHeader.startsWith("Basic ")) {
+      return new NextResponse("Authentication required", {
+        status: 401,
+        headers: {
+          "WWW-Authenticate": 'Basic realm="Staging area"',
+        },
+      });
     }
-
+    
+    // Декодируем и проверяем credentials
+    const base64Credentials = authHeader.replace("Basic ", "");
     try {
-      const session = JSON.parse(sessionCookie.value);
-      if (session.step !== "code") {
-        console.log("[MIDDLEWARE] Неверная сессия, редирект на вход");
-        return NextResponse.redirect(new URL("/sign-in", request.url));
+      // В Edge Runtime используем встроенную функцию декодирования
+      const decodedCredentials = atob(base64Credentials);
+      const [user, pass] = decodedCredentials.split(":");
+      
+      if (user !== authUser || pass !== authPass) {
+        return new NextResponse("Authentication required", {
+          status: 401,
+          headers: {
+            "WWW-Authenticate": 'Basic realm="Staging area"',
+          },
+        });
       }
     } catch (error) {
-      console.error("[MIDDLEWARE] Ошибка чтения сессии:", error);
-      return NextResponse.redirect(new URL("/sign-in", request.url));
+      return new NextResponse("Authentication required", {
+        status: 401,
+        headers: {
+          "WWW-Authenticate": 'Basic realm="Staging area"',
+        },
+      });
     }
   }
+
+  const sessionCookie = request.cookies.get("session");
+
+  // Страница verify-code теперь показывает форму входа, защита не нужна
 
   // Защита страницы 404 (только после подтверждения кода)
   if (request.nextUrl.pathname === "/404") {
@@ -49,7 +77,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/verify-code", "/404"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|robots.txt).*)"],
 };
 
 

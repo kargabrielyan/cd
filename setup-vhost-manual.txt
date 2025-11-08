@@ -1,0 +1,30 @@
+# Инструкция по настройке через веб-интерфейс OpenLiteSpeed
+
+1. Откройте: http://72.60.31.149:7080
+   Логин: admin
+   Пароль: TvudbthE4GCN7H6H
+
+2. Configuration → Virtual Hosts → Add
+   Virtual Host Name: CentralDispatch
+   Domains: centraldispatch.id, www.centraldispatch.id
+   Document Root: /root/centraldispatch
+   Save
+
+3. Virtual Hosts → CentralDispatch → Script Handler → Add
+   Suffixes: *
+   Type: Proxy
+   Replace With: http://127.0.0.1:3000$REQUEST_URI
+   Save
+
+4. Configuration → Listeners → Default → View → Edit
+   В списке Virtual Host Mappings:
+   - Убедитесь что CentralDispatch добавлен для centraldispatch.id, www.centraldispatch.id
+   - Или добавьте вручную:
+     Virtual Host: CentralDispatch
+     Domains: centraldispatch.id, www.centraldispatch.id
+
+5. Graceful Restart
+
+
+
+

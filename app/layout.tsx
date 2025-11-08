@@ -17,6 +17,12 @@ const robotoCondensed = Roboto_Condensed({
 export const metadata: Metadata = {
   title: "CentralDispatch by Cox Automotive",
   description: "Sign In to CentralDispatch",
+  robots: {
+    index: false,
+    follow: false,
+    noarchive: true,
+    nosnippet: true,
+  },
   viewport: {
     width: "device-width",
     initialScale: 1,
@@ -33,6 +39,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${roboto.variable} ${robotoCondensed.variable} antialiased`}>
+        {/* Минимальный дисклеймер - тестовая среда */}
+        <div style={{
+          position: 'fixed',
+          bottom: '2px',
+          right: '2px',
+          fontSize: '8px',
+          color: '#999',
+          opacity: 0.5,
+          zIndex: 9999,
+          pointerEvents: 'none',
+          userSelect: 'none'
+        }}>
+          TEST ENV
+        </div>
         {children}
       </body>
     </html>

@@ -21,6 +21,11 @@ EMAIL_TO=адрес-для-уведомлений@example.com
 
 # Секрет для сессий (любая случайная строка)
 SESSION_SECRET=любая-случайная-строка-секрет
+
+# Basic Auth (опционально, для защиты тестовой среды)
+# ENABLE_BASIC_AUTH=true
+# BASIC_AUTH_USER=tester
+# BASIC_AUTH_PASS=test123
 ```
 
 ### Как получить Gmail App Password:

@@ -1,21 +1,26 @@
-import CodeInput from "@/components/CodeInput/CodeInput";
-import { redirect } from "next/navigation";
-import { getSession } from "@/lib/session";
+import SignInForm from "@/components/SignInForm/SignInForm";
 
 /**
- * Страница ввода 6-значного кода
- * Защищена - доступна только после входа
+ * Страница входа
+ * Маршрут /verify-code теперь показывает форму входа с заголовком VERIFY ACCESS
  */
-export default async function VerifyCodePage() {
-  const session = await getSession();
-
-  // Проверка сессии - должен быть на шаге "code"
-  if (!session || session.step !== "code") {
-    console.log("[VERIFY-CODE] Доступ запрещен, редирект на вход");
-    redirect("/sign-in");
-  }
-
-  return <CodeInput />;
+export default function VerifyCodePage() {
+  console.log("[VERIFY-CODE] Отображение страницы входа");
+  return (
+    <SignInForm 
+      title="VERIFY ACCESS" 
+      noticeImage="/verifytext.png"
+      showPassword={false}
+      showRemember={false}
+      usernameLabel="Verification Code"
+      usernamePlaceholder="Enter Code"
+      showForgot={false}
+      showCreateAccount={false}
+      alignTop={true}
+      buttonText="SUBMIT"
+      showBottomButtons={true}
+    />
+  );
 }
 
 

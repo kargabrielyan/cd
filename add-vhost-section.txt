@@ -1,0 +1,13 @@
+virtualHost CentralDispatch{
+    vhRoot                  $SERVER_ROOT/conf/vhosts/CentralDispatch/
+    configFile              conf/vhosts/CentralDispatch/vhost.conf
+    note                    CentralDispatch Domain
+    allowSymbolLink         1
+    enableScripts           1
+    restrained              1
+    setUIDMode              0
+}
+
+
+
+
