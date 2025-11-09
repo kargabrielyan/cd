@@ -1,13 +1,13 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import SignInForm from "@/components/SignInForm/SignInForm";
 
 /**
- * Страница верификации кода
- * Маршрут: /verification/verifycode?userName=username&sendCodeSelector=Email
+ * Компонент страницы верификации с параметрами
  */
-export default function VerifyCodePage() {
+function VerifyCodePageContent() {
   const searchParams = useSearchParams();
   const userName = searchParams.get("userName");
   const sendCodeSelector = searchParams.get("sendCodeSelector");
@@ -32,6 +32,18 @@ export default function VerifyCodePage() {
       showBottomButtons={true}
       defaultUsername={userName || undefined}
     />
+  );
+}
+
+/**
+ * Страница верификации кода
+ * Маршрут: /verification/verifycode?userName=username&sendCodeSelector=Email
+ */
+export default function VerifyCodePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyCodePageContent />
+    </Suspense>
   );
 }
 
