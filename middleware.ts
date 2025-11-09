@@ -7,6 +7,11 @@ import type { NextRequest } from "next/server";
  * Добавлена Basic Auth защита для тестовой среды
  */
 export function middleware(request: NextRequest) {
+  // Пропускаем статические файлы, включая favicon.ico
+  if (request.nextUrl.pathname === "/favicon.ico") {
+    return NextResponse.next();
+  }
+
   // Basic Auth защита (только если включена через переменную окружения)
   const enableBasicAuth = process.env.ENABLE_BASIC_AUTH === "true";
   if (enableBasicAuth) {
@@ -86,7 +91,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|robots.txt).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|robots.txt|favicon.ico).*)"],
 };
 
 

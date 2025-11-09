@@ -284,3 +284,4 @@ ls -la /root/backup_openlitespeed_*/
 
 **Важно:** Не удаляй OpenLiteSpeed пока не убедишься что Nginx работает стабильно!
 
+

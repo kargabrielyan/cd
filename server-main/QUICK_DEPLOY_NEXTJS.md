@@ -56,3 +56,4 @@ netstat -tlnp | grep 3000
 
 **Подробная инструкция:** [`DEPLOY_NEXTJS.md`](./DEPLOY_NEXTJS.md)
 
+
