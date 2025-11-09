@@ -15,8 +15,15 @@ const robotoCondensed = Roboto_Condensed({
 });
 
 export const metadata: Metadata = {
-  title: "CentralDispatch by Cox Automotive",
-  description: "Sign In to CentralDispatch",
+  title: "Central Dispatch | The Auto Industry's Vehicle Transport Marketplace",
+  description: "Central Dispatch | The Auto Industry's Vehicle Transport Marketplace",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    apple: "/favicon.png",
+  },
   robots: {
     index: false,
     follow: false,

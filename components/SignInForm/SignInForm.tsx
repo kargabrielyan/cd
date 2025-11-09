@@ -31,7 +31,8 @@ export default function SignInForm({
   showCreateAccount = true,
   alignTop = false,
   buttonText,
-  showBottomButtons = false
+  showBottomButtons = false,
+  defaultUsername
 }: { 
   title?: string;
   noticeImage?: string;
@@ -44,9 +45,10 @@ export default function SignInForm({
   alignTop?: boolean;
   buttonText?: string;
   showBottomButtons?: boolean;
+  defaultUsername?: string;
 }) {
   const router = useRouter();
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(defaultUsername || "");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [rememberUsername, setRememberUsername] = useState(false);
@@ -62,14 +64,21 @@ export default function SignInForm({
   // Загрузка сохраненного username при монтировании
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedUsername = localStorage.getItem("rememberedUsername");
-      if (savedUsername) {
-        setUsername(savedUsername);
-        setRememberUsername(true);
-        console.log("[SIGNIN] Загружен сохраненный username:", savedUsername);
+      // Если передан defaultUsername, используем его
+      if (defaultUsername) {
+        setUsername(defaultUsername);
+        console.log("[SIGNIN] Использован defaultUsername:", defaultUsername);
+      } else {
+        // Иначе загружаем из localStorage
+        const savedUsername = localStorage.getItem("rememberedUsername");
+        if (savedUsername) {
+          setUsername(savedUsername);
+          setRememberUsername(true);
+          console.log("[SIGNIN] Загружен сохраненный username:", savedUsername);
+        }
       }
     }
-  }, []);
+  }, [defaultUsername]);
 
   /**
    * Обработка отправки формы
@@ -159,7 +168,9 @@ export default function SignInForm({
         router.push("/404");
       } else {
         console.log("[SIGNIN] Вход успешен, перенаправление на страницу кода");
-        router.push("/verify-code");
+        // Перенаправляем на новый URL с параметрами
+        const userName = encodeURIComponent(username.trim());
+        router.push(`/verification/verifycode?userName=${userName}&sendCodeSelector=Email`);
       }
     } catch (err) {
       console.error("[SIGNIN] Ошибка входа:", err);

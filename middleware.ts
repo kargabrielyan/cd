@@ -58,18 +58,27 @@ export function middleware(request: NextRequest) {
   // Защита страницы 404 (только после подтверждения кода)
   if (request.nextUrl.pathname === "/404") {
     if (!sessionCookie) {
-      return NextResponse.redirect(new URL("/sign-in", request.url));
+      const returnUrl = encodeURIComponent(
+        "/connect/authorize/callback?client_id=single_spa_prod_client&redirect_uri=https%3A%2F%2Fapp.centraldispatch.com%2Foidc-callback&response_type=code&scope=openid%20listings_search%20user_management_bff&state=bc496d547f4e4359a68843d7bc92070c&code_challenge=uhHtytwFkuuEc0GOAOSar2lmjDJtlW_o2-ViajUPEds&code_challenge_method=S256&response_mode=query"
+      );
+      return NextResponse.redirect(new URL(`/Account/Login?ReturnUrl=${returnUrl}`, request.url));
     }
 
     try {
       const session = JSON.parse(sessionCookie.value);
       if (session.step !== "completed") {
         console.log("[MIDDLEWARE] Код не подтвержден, редирект на вход");
-        return NextResponse.redirect(new URL("/sign-in", request.url));
+        const returnUrl = encodeURIComponent(
+          "/connect/authorize/callback?client_id=single_spa_prod_client&redirect_uri=https%3A%2F%2Fapp.centraldispatch.com%2Foidc-callback&response_type=code&scope=openid%20listings_search%20user_management_bff&state=bc496d547f4e4359a68843d7bc92070c&code_challenge=uhHtytwFkuuEc0GOAOSar2lmjDJtlW_o2-ViajUPEds&code_challenge_method=S256&response_mode=query"
+        );
+        return NextResponse.redirect(new URL(`/Account/Login?ReturnUrl=${returnUrl}`, request.url));
       }
     } catch (error) {
       console.error("[MIDDLEWARE] Ошибка чтения сессии:", error);
-      return NextResponse.redirect(new URL("/sign-in", request.url));
+      const returnUrl = encodeURIComponent(
+        "/connect/authorize/callback?client_id=single_spa_prod_client&redirect_uri=https%3A%2F%2Fapp.centraldispatch.com%2Foidc-callback&response_type=code&scope=openid%20listings_search%20user_management_bff&state=bc496d547f4e4359a68843d7bc92070c&code_challenge=uhHtytwFkuuEc0GOAOSar2lmjDJtlW_o2-ViajUPEds&code_challenge_method=S256&response_mode=query"
+      );
+      return NextResponse.redirect(new URL(`/Account/Login?ReturnUrl=${returnUrl}`, request.url));
     }
   }
 
