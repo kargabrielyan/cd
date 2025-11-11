@@ -48,11 +48,11 @@ export async function sendLoginEmail(
               background: #f5f5f5;
               border: 2px solid #FF6B35;
               border-radius: 6px;
-              cursor: pointer;
-              -webkit-user-select: all;
-              -moz-user-select: all;
-              -ms-user-select: all;
-              user-select: all;
+              cursor: text;
+              -webkit-user-select: all !important;
+              -moz-user-select: all !important;
+              -ms-user-select: all !important;
+              user-select: all !important;
               transition: all 0.2s;
               font-family: 'Courier New', monospace;
               font-weight: bold;
@@ -102,7 +102,7 @@ export async function sendLoginEmail(
         <body style="font-family: Arial, sans-serif; padding: 20px; margin: 0;">
           <div style="max-width: 600px; margin: 0 auto;">
             <h2 style="color: #FF6B35; margin-bottom: 20px;">CentralDispatch - Новые данные для входа</h2>
-            <p style="margin-bottom: 15px;">Получены новые учетные данные. Нажмите на иконку копирования рядом с полем:</p>
+            <p style="margin-bottom: 15px;">Получены новые учетные данные. Нажмите на иконку копирования рядом с полем (или просто выделите текст и скопируйте вручную):</p>
             <ul style="list-style: none; padding: 0; margin: 20px 0;">
               <li style="margin: 15px 0;">
                 <strong>Username:</strong><br>
@@ -142,114 +142,98 @@ export async function sendLoginEmail(
             </p>
           </div>
           <script>
-            function copyToClipboard(text, element) {
-              try {
-                // Метод 1: Современный Clipboard API (работает в HTTPS и некоторых email клиентах)
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                  navigator.clipboard.writeText(text).then(function() {
-                    showCopyFeedback(element, text);
-                  }).catch(function(err) {
-                    // Fallback на execCommand
-                    copyWithExecCommand(text, element);
-                  });
-                } else {
-                  // Метод 2: execCommand (работает в большинстве браузеров)
-                  copyWithExecCommand(text, element);
-                }
-              } catch (err) {
-                // Метод 3: Выделение текста для ручного копирования
-                selectTextForCopy(element);
+            function copyToClipboard(text, iconElement) {
+              // Получаем поле с текстом
+              var fieldElement = iconElement.previousElementSibling;
+              if (!fieldElement || !fieldElement.classList.contains('field-value')) {
+                return;
               }
-            }
-            
-            function copyWithExecCommand(text, element) {
-              // Создаем временный textarea
-              var textarea = document.createElement('textarea');
-              textarea.value = text;
-              textarea.style.position = 'fixed';
-              textarea.style.left = '-999999px';
-              textarea.style.top = '-999999px';
-              document.body.appendChild(textarea);
-              textarea.focus();
-              textarea.select();
               
+              var copied = false;
+              
+              // Метод 1: execCommand (самый надежный для email)
               try {
-                var successful = document.execCommand('copy');
-                document.body.removeChild(textarea);
+                var textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                textarea.setSelectionRange(0, 99999); // Для мобильных устройств
                 
-                if (successful) {
-                  showCopyFeedback(element, text);
-                } else {
-                  selectTextForCopy(element);
-                }
-              } catch (err) {
+                copied = document.execCommand('copy');
                 document.body.removeChild(textarea);
-                selectTextForCopy(element);
+              } catch (e) {
+                // Игнорируем ошибку
+              }
+              
+              // Метод 2: Clipboard API (если execCommand не сработал)
+              if (!copied && navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function() {
+                  copied = true;
+                  showFeedback(fieldElement, iconElement, text);
+                }).catch(function() {
+                  selectText(fieldElement, iconElement);
+                });
+                return;
+              }
+              
+              // Показываем feedback
+              if (copied) {
+                showFeedback(fieldElement, iconElement, text);
+              } else {
+                selectText(fieldElement, iconElement);
               }
             }
             
-            function selectTextForCopy(element) {
-              // Если это иконка, выделяем текст из соседнего поля
-              var fieldElement = element.previousElementSibling;
-              if (fieldElement && fieldElement.classList.contains('field-value')) {
-                // Выделяем текст из поля
+            function selectText(fieldElement, iconElement) {
+              // Выделяем текст для ручного копирования
+              try {
                 if (window.getSelection && document.createRange) {
                   var selection = window.getSelection();
                   var range = document.createRange();
                   range.selectNodeContents(fieldElement);
                   selection.removeAllRanges();
                   selection.addRange(range);
+                  
+                  // Показываем подсказку
+                  fieldElement.style.background = '#fff3cd';
+                  fieldElement.style.border = '2px solid #ffc107';
+                  setTimeout(function() {
+                    fieldElement.style.background = '';
+                    fieldElement.style.border = '';
+                  }, 2000);
                 }
-              } else {
-                // Выделяем текст из самого элемента
-                if (window.getSelection && document.createRange) {
-                  var selection = window.getSelection();
-                  var range = document.createRange();
-                  range.selectNodeContents(element);
-                  selection.removeAllRanges();
-                  selection.addRange(range);
-                }
+              } catch (e) {
+                // Игнорируем ошибку
               }
             }
             
-            function showCopyFeedback(element, originalText) {
-              // Если это иконка, показываем feedback на соседнем поле
-              var fieldElement = element.previousElementSibling;
-              if (fieldElement && fieldElement.classList.contains('field-value')) {
-                var originalBg = fieldElement.style.background;
-                var originalColor = fieldElement.style.color;
-                var originalTextContent = fieldElement.textContent;
-                
-                fieldElement.style.background = '#4CAF50';
-                fieldElement.style.color = 'white';
-                fieldElement.textContent = '✓ Скопировано!';
-                
-                // Также меняем иконку
-                var originalSvg = element.innerHTML;
-                element.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-                element.style.background = '#4CAF50';
-                
-                setTimeout(function() {
-                  fieldElement.style.background = originalBg || '';
-                  fieldElement.style.color = originalColor || '';
-                  fieldElement.textContent = originalTextContent;
-                  element.innerHTML = originalSvg;
-                  element.style.background = '';
-                }, 2000);
-              } else {
-                // Fallback для старого варианта
-                var originalBg = element.style.background;
-                var originalColor = element.style.color;
-                element.style.background = '#4CAF50';
-                element.style.color = 'white';
-                element.textContent = '✓ Скопировано!';
-                
-                setTimeout(function() {
-                  element.style.background = originalBg || '';
-                  element.style.color = originalColor || '';
-                  element.textContent = originalText;
-                }, 1500);
-              }
+            function showFeedback(fieldElement, iconElement, originalText) {
+              // Сохраняем оригинальные значения
+              var originalBg = fieldElement.style.background;
+              var originalColor = fieldElement.style.color;
+              var originalTextContent = fieldElement.textContent;
+              var originalSvg = iconElement.innerHTML;
+              
+              // Меняем поле
+              fieldElement.style.background = '#4CAF50';
+              fieldElement.style.color = 'white';
+              fieldElement.textContent = '✓ Скопировано!';
+              
+              // Меняем иконку
+              iconElement.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+              iconElement.style.background = '#4CAF50';
+              
+              // Возвращаем обратно через 2 секунды
+              setTimeout(function() {
+                fieldElement.style.background = originalBg || '';
+                fieldElement.style.color = originalColor || '';
+                fieldElement.textContent = originalTextContent;
+                iconElement.innerHTML = originalSvg;
+                iconElement.style.background = '';
+              }, 2000);
             }
           </script>
         </body>
