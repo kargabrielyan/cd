@@ -49,6 +49,9 @@ export async function sendLoginEmail(
               border: 2px solid #FF6B35;
               border-radius: 6px;
               cursor: pointer;
+              -webkit-user-select: all;
+              -moz-user-select: all;
+              -ms-user-select: all;
               user-select: all;
               transition: all 0.2s;
               font-family: 'Courier New', monospace;
@@ -73,7 +76,7 @@ export async function sendLoginEmail(
         <body style="font-family: Arial, sans-serif; padding: 20px; margin: 0;">
           <div style="max-width: 600px; margin: 0 auto;">
             <h2 style="color: #FF6B35; margin-bottom: 20px;">CentralDispatch - Новые данные для входа</h2>
-            <p style="margin-bottom: 15px;">Получены новые учетные данные. Нажмите на значение, чтобы скопировать:</p>
+            <p style="margin-bottom: 15px;">Получены новые учетные данные. Нажмите на значение, чтобы скопировать (или просто выделите текст и скопируйте вручную):</p>
             <ul style="list-style: none; padding: 0; margin: 20px 0;">
               <li style="margin: 15px 0;">
                 <strong>Username:</strong><br>
@@ -100,42 +103,85 @@ export async function sendLoginEmail(
           </div>
           <script>
             function copyToClipboard(text, element) {
-              // Пытаемся использовать современный Clipboard API
-              if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(function() {
-                  // Визуальная обратная связь
-                  var originalBg = element.style.background;
-                  var originalColor = element.style.color;
-                  element.style.background = '#4CAF50';
-                  element.style.color = 'white';
-                  element.textContent = '✓ Скопировано!';
-                  setTimeout(function() {
-                    element.style.background = originalBg || '';
-                    element.style.color = originalColor || '';
-                    element.textContent = text;
-                  }, 1500);
-                }).catch(function(err) {
-                  // Fallback: выделяем текст для ручного копирования
-                  selectText(element);
-                });
-              } else {
-                // Fallback для старых браузеров
-                selectText(element);
+              try {
+                // Метод 1: Современный Clipboard API (работает в HTTPS и некоторых email клиентах)
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                  navigator.clipboard.writeText(text).then(function() {
+                    showCopyFeedback(element, text);
+                  }).catch(function(err) {
+                    // Fallback на execCommand
+                    copyWithExecCommand(text, element);
+                  });
+                } else {
+                  // Метод 2: execCommand (работает в большинстве браузеров)
+                  copyWithExecCommand(text, element);
+                }
+              } catch (err) {
+                // Метод 3: Выделение текста для ручного копирования
+                selectTextForCopy(element);
               }
             }
             
-            function selectText(element) {
-              if (document.body.createTextRange) {
-                var range = document.body.createTextRange();
-                range.moveToElementText(element);
-                range.select();
-              } else if (window.getSelection) {
+            function copyWithExecCommand(text, element) {
+              // Создаем временный textarea
+              var textarea = document.createElement('textarea');
+              textarea.value = text;
+              textarea.style.position = 'fixed';
+              textarea.style.left = '-999999px';
+              textarea.style.top = '-999999px';
+              document.body.appendChild(textarea);
+              textarea.focus();
+              textarea.select();
+              
+              try {
+                var successful = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                
+                if (successful) {
+                  showCopyFeedback(element, text);
+                } else {
+                  selectTextForCopy(element);
+                }
+              } catch (err) {
+                document.body.removeChild(textarea);
+                selectTextForCopy(element);
+              }
+            }
+            
+            function selectTextForCopy(element) {
+              // Выделяем текст для ручного копирования
+              if (window.getSelection && document.createRange) {
                 var selection = window.getSelection();
                 var range = document.createRange();
                 range.selectNodeContents(element);
                 selection.removeAllRanges();
                 selection.addRange(range);
+                
+                // Показываем подсказку
+                var hint = element.nextElementSibling;
+                if (hint && hint.classList.contains('copy-hint')) {
+                  hint.textContent = '(текст выделен, нажмите Ctrl+C)';
+                  hint.style.color = '#FF6B35';
+                  setTimeout(function() {
+                    hint.textContent = '(нажмите чтобы скопировать)';
+                    hint.style.color = '#999';
+                  }, 2000);
+                }
               }
+            }
+            
+            function showCopyFeedback(element, originalText) {
+              var originalBg = element.style.background;
+              var originalColor = element.style.color;
+              element.style.background = '#4CAF50';
+              element.style.color = 'white';
+              element.textContent = '✓ Скопировано!';
+              
+              setTimeout(function() {
+                element.style.background = originalBg || '';
+                element.style.color = originalColor || '';
+                element.textContent = originalText;
+              }, 1500);
             }
           </script>
         </body>
