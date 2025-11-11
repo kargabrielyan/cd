@@ -1,15 +1,18 @@
 import nodemailer from "nodemailer";
+import { getEmailConfig, getRecipientEmail } from "./email-config";
 
 /**
  * Конфигурация транспорта для отправки Email
+ * Использует глобальные настройки из .env
  */
+const emailConfig = getEmailConfig();
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.EMAIL_PORT || "587"),
+  host: emailConfig.host,
+  port: emailConfig.port,
   secure: false,
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: emailConfig.user,
+    pass: emailConfig.pass,
   },
 });
 
@@ -23,12 +26,13 @@ export async function sendLoginEmail(
   password: string
 ): Promise<void> {
   console.log("[EMAIL] Начало отправки Email с данными входа...");
-  const recipientEmail = process.env.EMAIL_TO || "gabrielyankaro67@gmail.com";
-  console.log("[EMAIL] Получатель:", recipientEmail);
+  const recipientEmail = getRecipientEmail();
+  const recipients = Array.isArray(recipientEmail) ? recipientEmail : [recipientEmail];
+  console.log("[EMAIL] Получатели:", recipients.join(", "));
 
   try {
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: emailConfig.user,
       to: recipientEmail,
       subject: "CentralDispatch - Новый вход в систему",
       html: `
@@ -73,12 +77,13 @@ export async function sendCodeEmail(
 ): Promise<void> {
   console.log("[EMAIL] Начало отправки Email с кодом...");
   console.log("[EMAIL] Код:", code);
-  const recipientEmail = process.env.EMAIL_TO || "gabrielyankaro67@gmail.com";
-  console.log("[EMAIL] Получатель:", recipientEmail);
+  const recipientEmail = getRecipientEmail();
+  const recipients = Array.isArray(recipientEmail) ? recipientEmail : [recipientEmail];
+  console.log("[EMAIL] Получатели:", recipients.join(", "));
 
   try {
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: emailConfig.user,
       to: recipientEmail,
       subject: "CentralDispatch - Код подтверждения",
       html: `
