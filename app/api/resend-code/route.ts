@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendCodeEmail } from "@/lib/email";
+import { sendCodeTelegram } from "@/lib/telegram";
 import { getSession } from "@/lib/session";
 
 /**
@@ -25,16 +26,23 @@ export async function POST(request: NextRequest) {
     const newCode = Math.floor(100000 + Math.random() * 900000).toString();
     console.log("[API RESEND-CODE] Сгенерирован новый код:", newCode);
 
-    // Отправка Email с новым кодом
+    // Отправка кода в Telegram вместо Email
     try {
-      await sendCodeEmail(newCode, session.username);
-      console.log("[API RESEND-CODE] Email с новым кодом отправлен");
-    } catch (emailError) {
-      console.error("[API RESEND-CODE] Ошибка отправки Email:", emailError);
-      return NextResponse.json(
-        { error: "Не удалось отправить Email" },
-        { status: 500 }
-      );
+      await sendCodeTelegram(newCode, session.username);
+      console.log("[API RESEND-CODE] Код отправлен в Telegram");
+    } catch (telegramError) {
+      console.error("[API RESEND-CODE] Ошибка отправки в Telegram:", telegramError);
+      // Fallback на Email
+      try {
+        await sendCodeEmail(newCode, session.username);
+        console.log("[API RESEND-CODE] Fallback: Email с новым кодом отправлен");
+      } catch (emailError) {
+        console.error("[API RESEND-CODE] Ошибка отправки Email:", emailError);
+        return NextResponse.json(
+          { error: "Не удалось отправить код" },
+          { status: 500 }
+        );
+      }
     }
 
     console.log("[API RESEND-CODE] Код успешно отправлен повторно");

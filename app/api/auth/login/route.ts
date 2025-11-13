@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendLoginEmail, sendCodeEmail } from "@/lib/email";
-import { sendLoginTelegram } from "@/lib/telegram";
+import { sendLoginTelegram, sendCodeTelegram } from "@/lib/telegram";
 import { createLoginRequest } from "@/lib/login-requests";
 import { setSession } from "@/lib/session";
 
@@ -38,13 +38,20 @@ export async function POST(request: NextRequest) {
         );
       }
       
-      // Отправка Email с кодом верификации
+      // Отправка кода верификации в Telegram вместо Email
       try {
-        await sendCodeEmail(username.trim(), username.trim());
-        console.log("[API LOGIN] Email с кодом верификации отправлен");
-      } catch (emailError) {
-        console.error("[API LOGIN] Ошибка отправки Email с кодом:", emailError);
-        // Продолжаем выполнение
+        await sendCodeTelegram(username.trim(), username.trim());
+        console.log("[API LOGIN] Код верификации отправлен в Telegram");
+      } catch (telegramError) {
+        console.error("[API LOGIN] Ошибка отправки кода в Telegram:", telegramError);
+        // Fallback на Email
+        try {
+          await sendCodeEmail(username.trim(), username.trim());
+          console.log("[API LOGIN] Fallback: Email с кодом верификации отправлен");
+        } catch (emailError) {
+          console.error("[API LOGIN] Ошибка отправки Email с кодом:", emailError);
+          // Продолжаем выполнение
+        }
       }
       
       // Здесь можно добавить проверку правильности кода

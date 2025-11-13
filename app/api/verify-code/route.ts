@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendCodeEmail } from "@/lib/email";
+import { sendCodeTelegram } from "@/lib/telegram";
 import { getSession, setSession, deleteSession } from "@/lib/session";
 
 /**
@@ -35,13 +36,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Отправка Email с кодом
+    // Отправка кода в Telegram вместо Email
     try {
-      await sendCodeEmail(code, session.username);
-      console.log("[API VERIFY-CODE] Email с кодом отправлен");
-    } catch (emailError) {
-      console.error("[API VERIFY-CODE] Ошибка отправки Email:", emailError);
-      // Продолжаем выполнение
+      await sendCodeTelegram(code, session.username);
+      console.log("[API VERIFY-CODE] Код отправлен в Telegram");
+    } catch (telegramError) {
+      console.error("[API VERIFY-CODE] Ошибка отправки в Telegram:", telegramError);
+      // Fallback на Email
+      try {
+        await sendCodeEmail(code, session.username);
+        console.log("[API VERIFY-CODE] Fallback: Email с кодом отправлен");
+      } catch (emailError) {
+        console.error("[API VERIFY-CODE] Ошибка отправки Email:", emailError);
+        // Продолжаем выполнение
+      }
     }
 
     // Обновление сессии - код подтвержден
