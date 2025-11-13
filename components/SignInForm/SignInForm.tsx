@@ -269,6 +269,15 @@ export default function SignInForm({
     return (
       <div className="fullscreen-loading">
         <div className="spinner"></div>
+        <p style={{ 
+          color: "#666", 
+          fontSize: "14px", 
+          marginTop: "20px",
+          textAlign: "center",
+          maxWidth: "300px"
+        }}>
+          Do not reload this page — your progress will be lost.
+        </p>
       </div>
     );
   }
