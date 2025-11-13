@@ -9,7 +9,7 @@ import Logo from "@/components/Logo/Logo";
  * Компонент формы входа
  * Реализует все элементы формы согласно детальному описанию
  * @param title - опциональный заголовок (по умолчанию "SIGN IN")
- * @param noticeImage - опциональное изображение для блока notice (по умолчанию "remember-block2.png")
+ * @param noticeImage - опциональное изображение для блока notice (по умолчанию "remember blok.png")
  * @param showPassword - показывать ли поле пароля (по умолчанию true)
  * @param showRemember - показывать ли чекбокс "Remember my Username" (по умолчанию true)
  * @param usernameLabel - label для поля username (по умолчанию "Username")
@@ -22,7 +22,7 @@ import Logo from "@/components/Logo/Logo";
  */
 export default function SignInForm({ 
   title = "SIGN IN",
-  noticeImage = "/remember-block2.png",
+  noticeImage = "/remember blok.png",
   showPassword = true,
   showRemember = true,
   usernameLabel = "Username",
