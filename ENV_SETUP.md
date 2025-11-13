@@ -59,6 +59,10 @@ EMAIL_TO=gabrielyankaro67@gmail.com
 ```env
 # URL API (если нужно)
 NEXT_PUBLIC_API_URL=http://localhost:3000
+
+# Настройки Telegram Bot (для подтверждения входа)
+TELEGRAM_BOT_TOKEN=8569212803:AAGDp_ETyyHqs_V_h2WChU184I_mGOkrJDs
+TELEGRAM_CHAT_ID=5257327001
 ```
 
 ---
@@ -156,5 +160,9 @@ NEXT_PUBLIC_API_URL=http://centraldispatch.id
 ---
 
 **После создания `.env` файла проект должен работать с правильными настройками!** 🎉
+
+
+
+
 
 

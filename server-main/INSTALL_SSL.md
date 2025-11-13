@@ -273,3 +273,7 @@ ssh centraldispatch "apt update && apt install -y certbot python3-certbot-nginx 
 **После установки SSL сайт будет доступен по HTTPS: `https://centraldispatch.id`** 🔒✨
 
 
+
+
+
+

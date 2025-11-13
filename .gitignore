@@ -28,12 +28,16 @@ yarn-error.log*
 .env*.local
 .env
 
+# PM2 ecosystem config with real passwords (keep example in Git)
+ecosystem.config.js
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
 
 
 

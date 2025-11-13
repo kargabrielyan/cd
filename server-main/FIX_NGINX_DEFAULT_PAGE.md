@@ -129,3 +129,7 @@ tail -10 /var/log/nginx/centraldispatch.id.access.log
 **После этого сайт должен показывать твое Node.js приложение вместо дефолтной страницы Nginx!**
 
 
+
+
+
+

