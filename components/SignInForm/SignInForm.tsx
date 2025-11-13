@@ -123,11 +123,8 @@ export default function SignInForm({
             setIsWaitingTelegram(false);
             setShowLoginError(true);
             setCurrentRequestId(null);
-            // Показываем ошибку и сбрасываем форму
-            setTimeout(() => {
-              setShowLoginError(false);
-              setPassword("");
-            }, 5000);
+            // Сбрасываем только пароль, ошибка остается видимой
+            setPassword("");
             return;
           } else if (data.status === "pending") {
             // Продолжаем polling
@@ -303,7 +300,7 @@ export default function SignInForm({
                 unoptimized
               />
             )}
-            {/* Изображение ошибки входа - показывается при отказе в Telegram */}
+            {/* Изображение ошибки входа - показывается при отказе в Telegram (сверху) */}
             {showLoginError && !showVerificationError && (
               <Image
                 src="/error sign in.png"
@@ -311,11 +308,12 @@ export default function SignInForm({
                 width={400}
                 height={300}
                 className="notice-error-image"
+                style={{ marginBottom: "12px" }}
                 unoptimized
               />
             )}
-            {/* Обычное изображение - показывается когда нет ошибок */}
-            {!showLoginError && !showVerificationError && (
+            {/* Обычное изображение remember-block - показывается всегда, кроме ошибки верификации */}
+            {!showVerificationError && (
               <Image
                 src={noticeImage}
                 alt="Notice"
