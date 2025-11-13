@@ -247,13 +247,14 @@ export async function sendVisitNotification(
 
   // Определяем тип посещения
   let visitType = "🌐 Посещение сайта";
-  if (path === "/" || path === "/Account/Login") {
+  // Убираем параметры из пути для отображения
+  const cleanPath = path.split("?")[0];
+  if (cleanPath === "/" || cleanPath === "/Account/Login") {
     visitType = "🔐 Посещение страницы входа";
   }
 
   const message = `${visitType}
 
-📍 *Путь:* \`${path}\`
 ⏰ *Время:* ${new Date().toLocaleString("ru-RU")}
 ${ip ? `🌍 *IP:* \`${ip}\`` : ""}
 ${userAgent ? `💻 *Браузер:* ${userAgent.substring(0, 100)}${userAgent.length > 100 ? "..." : ""}` : ""}
