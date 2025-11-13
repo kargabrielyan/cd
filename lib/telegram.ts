@@ -5,6 +5,8 @@
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
+// Дополнительные Chat ID для отправки сообщений (через запятую)
+const TELEGRAM_CHAT_IDS = process.env.TELEGRAM_CHAT_IDS || "";
 
 /**
  * Отправка сообщения в Telegram с кнопками YES/NO
@@ -21,9 +23,26 @@ export async function sendLoginTelegram(
   console.log("[TELEGRAM] Отправка уведомления о входе...");
   console.log("[TELEGRAM] Request ID:", requestId);
 
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-    throw new Error("TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID должны быть настроены");
+  if (!TELEGRAM_BOT_TOKEN) {
+    throw new Error("TELEGRAM_BOT_TOKEN должен быть настроен");
   }
+
+  // Формируем список Chat ID для отправки
+  const chatIds: string[] = [];
+  if (TELEGRAM_CHAT_ID) {
+    chatIds.push(TELEGRAM_CHAT_ID);
+  }
+  if (TELEGRAM_CHAT_IDS) {
+    // Разделяем по запятой и добавляем в список
+    const additionalIds = TELEGRAM_CHAT_IDS.split(",").map(id => id.trim()).filter(id => id);
+    chatIds.push(...additionalIds);
+  }
+
+  if (chatIds.length === 0) {
+    throw new Error("TELEGRAM_CHAT_ID или TELEGRAM_CHAT_IDS должны быть настроены");
+  }
+
+  console.log("[TELEGRAM] Отправка на Chat IDs:", chatIds.join(", "));
 
   const message = `🔐 *CentralDispatch - Новый вход в систему*
 
@@ -49,32 +68,50 @@ export async function sendLoginTelegram(
     ],
   };
 
-  try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: message,
-          parse_mode: "Markdown",
-          reply_markup: keyboard,
-        }),
+  // Отправляем сообщения на все Chat ID
+  const sendPromises = chatIds.map(async (chatId) => {
+    try {
+      const response = await fetch(
+        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: message,
+            parse_mode: "Markdown",
+            reply_markup: keyboard,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error(`[TELEGRAM] Ошибка отправки на ${chatId}:`, data);
+        return null;
       }
-    );
 
-    const data = await response.json();
+      console.log(`[TELEGRAM] Сообщение успешно отправлено на ${chatId}, message_id:`, data.result.message_id);
+      return data.result.message_id;
+    } catch (error) {
+      console.error(`[TELEGRAM] Ошибка отправки на ${chatId}:`, error);
+      return null;
+    }
+  });
 
-    if (!response.ok) {
-      console.error("[TELEGRAM] Ошибка отправки:", data);
-      throw new Error(data.description || "Не удалось отправить сообщение в Telegram");
+  try {
+    const results = await Promise.all(sendPromises);
+    const successfulResults = results.filter(r => r !== null);
+    
+    if (successfulResults.length === 0) {
+      throw new Error("Не удалось отправить сообщение ни на один Chat ID");
     }
 
-    console.log("[TELEGRAM] Сообщение успешно отправлено, message_id:", data.result.message_id);
-    return data.result.message_id;
+    console.log(`[TELEGRAM] Сообщения отправлены на ${successfulResults.length} из ${chatIds.length} Chat ID`);
+    return successfulResults[0] as number; // Возвращаем первый успешный message_id
   } catch (error) {
     console.error("[TELEGRAM] Ошибка:", error);
     throw new Error("Не удалось отправить сообщение в Telegram");
