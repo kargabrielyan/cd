@@ -154,6 +154,7 @@ export default function SignInForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setShowLoginError(false); // Скрываем ошибку при новой попытке входа
     setIsLoading(true);
 
     console.log("[SIGNIN] Попытка входа...");
