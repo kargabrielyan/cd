@@ -465,9 +465,11 @@ h1, h2, h3, .font-condensed {
   height: 100%;
   background-color: #ffffff;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 9999;
+  gap: 20px;
 }
 
 .fullscreen-loading .spinner {
@@ -477,6 +479,14 @@ h1, h2, h3, .font-condensed {
   border-top: 4px solid #F6BD00;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+.fullscreen-loading p {
+  color: #666;
+  font-size: 14px;
+  text-align: center;
+  max-width: 300px;
+  margin: 0;
 }
 
 /* Адаптив */
