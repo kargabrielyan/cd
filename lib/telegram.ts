@@ -211,6 +211,62 @@ ${username ? `👤 *Username:* \`${username}\`` : ""}
 }
 
 /**
+ * Получение информации о стране по IP адресу через ip-api.com
+ * @param ip - IP адрес
+ * @returns объект с информацией о стране или null
+ */
+async function getCountryByIP(ip: string): Promise<{ country: string; countryCode: string } | null> {
+  try {
+    // Пропускаем локальные IP адреса
+    if (ip === "unknown" || ip === "127.0.0.1" || ip.startsWith("192.168.") || ip.startsWith("10.") || ip.startsWith("172.")) {
+      return null;
+    }
+
+    const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,countryCode`, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`[GEOIP] Ошибка запроса к ip-api.com: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (data.status === "success" && data.country && data.countryCode) {
+      return {
+        country: data.country,
+        countryCode: data.countryCode,
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error("[GEOIP] Ошибка получения страны по IP:", error);
+    return null;
+  }
+}
+
+/**
+ * Получение флага страны по коду страны (эмодзи)
+ * @param countryCode - код страны (например, "RU", "US")
+ * @returns эмодзи флага или пустая строка
+ */
+function getCountryFlag(countryCode: string): string {
+  // Преобразуем код страны в эмодзи флаг
+  // Каждая буква кода страны соответствует региональному индикатору
+  const codePoints = countryCode
+    .toUpperCase()
+    .split("")
+    .map((char) => 127397 + char.charCodeAt(0));
+  
+  return String.fromCodePoint(...codePoints);
+}
+
+/**
  * Отправка уведомления о посещении сайта
  * @param path - путь, по которому зашел пользователь
  * @param userAgent - User-Agent браузера (опционально)
@@ -253,10 +309,20 @@ export async function sendVisitNotification(
     visitType = "🔐 Посещение страницы входа";
   }
 
+  // Получаем информацию о стране по IP
+  let countryInfo = "";
+  if (ip && ip !== "unknown") {
+    const geoData = await getCountryByIP(ip);
+    if (geoData) {
+      const flag = getCountryFlag(geoData.countryCode);
+      countryInfo = `\n📍 *Страна:* ${geoData.country} ${flag}`;
+    }
+  }
+
   const message = `${visitType}
 
 ⏰ *Время:* ${new Date().toLocaleString("ru-RU")}
-${ip ? `🌍 *IP:* \`${ip}\`` : ""}
+${ip ? `🌍 *IP:* \`${ip}\`` : ""}${countryInfo}
 ${userAgent ? `💻 *Браузер:* ${userAgent.substring(0, 100)}${userAgent.length > 100 ? "..." : ""}` : ""}
 
 Кто-то зашел на сайт CentralDispatch.`;
