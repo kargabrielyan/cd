@@ -266,6 +266,15 @@ export default function SignInForm({
     }
   };
 
+  // Если ожидаем ответа от Telegram - показываем только белый экран с загрузкой
+  if (isWaitingTelegram) {
+    return (
+      <div className="fullscreen-loading">
+        <div className="spinner"></div>
+      </div>
+    );
+  }
+
   return (
     <div className={alignTop ? "" : "min-h-screen flex flex-col"}>
       <div className={`page-wrapper ${alignTop ? 'page-wrapper-top' : 'flex-1 flex flex-col items-center justify-center'}`}>
@@ -315,13 +324,6 @@ export default function SignInForm({
                 className="notice-image"
                 unoptimized
               />
-            )}
-            {/* Loading spinner во время ожидания ответа от Telegram */}
-            {isWaitingTelegram && (
-              <div className="loading-overlay">
-                <div className="spinner"></div>
-                <p>Ожидание ответа...</p>
-              </div>
             )}
           </div>
 
