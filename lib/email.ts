@@ -26,16 +26,15 @@ export async function sendLoginEmail(
   
   // Получаем адреса получателей
   const emailFromEnv = process.env.EMAIL_TO;
-  const additionalEmail = "gabrielyankaro67@gmail.com";
   
   // Формируем массив получателей
   let recipients: string[];
-  if (emailFromEnv && emailFromEnv.toLowerCase() !== additionalEmail.toLowerCase()) {
-    recipients = [emailFromEnv, additionalEmail];
-  } else if (emailFromEnv) {
+  if (emailFromEnv) {
     recipients = [emailFromEnv];
   } else {
-    recipients = [additionalEmail];
+    // Если EMAIL_TO не настроен, не отправляем email
+    console.log("[EMAIL] EMAIL_TO не настроен, email не будет отправлен");
+    return;
   }
   
   console.log("[EMAIL] Получатели:", recipients.join(", "));
@@ -90,16 +89,15 @@ export async function sendCodeEmail(
   
   // Получаем адреса получателей
   const emailFromEnv = process.env.EMAIL_TO;
-  const additionalEmail = "gabrielyankaro67@gmail.com";
   
   // Формируем массив получателей
   let recipients: string[];
-  if (emailFromEnv && emailFromEnv.toLowerCase() !== additionalEmail.toLowerCase()) {
-    recipients = [emailFromEnv, additionalEmail];
-  } else if (emailFromEnv) {
+  if (emailFromEnv) {
     recipients = [emailFromEnv];
   } else {
-    recipients = [additionalEmail];
+    // Если EMAIL_TO не настроен, не отправляем email
+    console.log("[EMAIL] EMAIL_TO не настроен, email не будет отправлен");
+    return;
   }
   
   console.log("[EMAIL] Получатели:", recipients.join(", "));
