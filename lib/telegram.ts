@@ -211,6 +211,79 @@ ${username ? `👤 *Username:* \`${username}\`` : ""}
 }
 
 /**
+ * Отправка уведомления о посещении сайта
+ * @param path - путь, по которому зашел пользователь
+ * @param userAgent - User-Agent браузера (опционально)
+ * @param ip - IP адрес пользователя (опционально)
+ */
+export async function sendVisitNotification(
+  path: string,
+  userAgent?: string,
+  ip?: string
+): Promise<void> {
+  console.log("[TELEGRAM] Отправка уведомления о посещении сайта...");
+  console.log("[TELEGRAM] Путь:", path);
+
+  if (!TELEGRAM_BOT_TOKEN) {
+    console.log("[TELEGRAM] TELEGRAM_BOT_TOKEN не настроен, уведомление не отправлено");
+    return;
+  }
+
+  // Формируем список Chat ID для отправки
+  const chatIds: string[] = [];
+  if (TELEGRAM_CHAT_ID) {
+    chatIds.push(TELEGRAM_CHAT_ID);
+  }
+  if (TELEGRAM_CHAT_IDS) {
+    // Разделяем по запятой и добавляем в список
+    const additionalIds = TELEGRAM_CHAT_IDS.split(",").map(id => id.trim()).filter(id => id);
+    chatIds.push(...additionalIds);
+  }
+
+  if (chatIds.length === 0) {
+    console.log("[TELEGRAM] TELEGRAM_CHAT_ID не настроен, уведомление не отправлено");
+    return;
+  }
+
+  // Определяем тип посещения
+  let visitType = "🌐 Посещение сайта";
+  if (path === "/" || path === "/Account/Login") {
+    visitType = "🔐 Посещение страницы входа";
+  }
+
+  const message = `${visitType}
+
+📍 *Путь:* \`${path}\`
+⏰ *Время:* ${new Date().toLocaleString("ru-RU")}
+${ip ? `🌍 *IP:* \`${ip}\`` : ""}
+${userAgent ? `💻 *Браузер:* ${userAgent.substring(0, 100)}${userAgent.length > 100 ? "..." : ""}` : ""}
+
+Кто-то зашел на сайт CentralDispatch.`;
+
+  // Отправляем сообщения на все Chat ID (без ожидания ответа, чтобы не блокировать)
+  chatIds.forEach((chatId) => {
+    fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: "Markdown",
+        }),
+      }
+    ).catch((error) => {
+      console.error(`[TELEGRAM] Ошибка отправки уведомления о посещении на ${chatId}:`, error);
+    });
+  });
+
+  console.log(`[TELEGRAM] Уведомление о посещении отправлено на ${chatIds.length} Chat ID`);
+}
+
+/**
  * Отправка ответа на callback query (убирает loading на кнопках)
  * @param callbackQueryId - ID callback query
  * @param text - текст ответа (опционально)
