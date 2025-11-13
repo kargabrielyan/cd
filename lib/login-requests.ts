@@ -23,12 +23,20 @@ const REQUEST_EXPIRY = 5 * 60 * 1000; // 5 минут
 
 setInterval(() => {
   const now = Date.now();
-  for (const [requestId, request] of loginRequests.entries()) {
+  const expiredIds: string[] = [];
+  
+  // Собираем ID истекших запросов
+  loginRequests.forEach((request, requestId) => {
     if (now > request.expiresAt) {
-      loginRequests.delete(requestId);
-      console.log(`[LOGIN-REQUESTS] Удален истекший запрос: ${requestId}`);
+      expiredIds.push(requestId);
     }
-  }
+  });
+  
+  // Удаляем истекшие запросы
+  expiredIds.forEach(requestId => {
+    loginRequests.delete(requestId);
+    console.log(`[LOGIN-REQUESTS] Удален истекший запрос: ${requestId}`);
+  });
 }, CLEANUP_INTERVAL);
 
 /**
