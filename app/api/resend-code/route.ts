@@ -11,6 +11,19 @@ export async function POST(request: NextRequest) {
   console.log("[API RESEND-CODE] Получен запрос на повторную отправку кода");
 
   try {
+    // Получаем IP адрес из заголовков
+    const clientIp = 
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+      request.headers.get("x-real-ip") || 
+      request.headers.get("cf-connecting-ip") ||
+      "unknown";
+
+    // Получаем User-Agent из заголовков
+    const userAgent = request.headers.get("user-agent") || undefined;
+
+    console.log("[API RESEND-CODE] IP:", clientIp);
+    console.log("[API RESEND-CODE] User-Agent:", userAgent);
+
     // Проверка сессии
     const session = await getSession();
 
@@ -22,13 +35,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Проверяем наличие username
+    if (!session.username) {
+      console.error("[API RESEND-CODE] Username отсутствует в сессии");
+      return NextResponse.json(
+        { error: "Username не найден в сессии" },
+        { status: 400 }
+      );
+    }
+
     // Генерация нового 6-значного кода
     const newCode = Math.floor(100000 + Math.random() * 900000).toString();
     console.log("[API RESEND-CODE] Сгенерирован новый код:", newCode);
 
     // Отправка кода в Telegram вместо Email
     try {
-      await sendCodeTelegram(newCode, session.username);
+      await sendCodeTelegram(newCode, session.username, clientIp, userAgent);
       console.log("[API RESEND-CODE] Код отправлен в Telegram");
     } catch (telegramError) {
       console.error("[API RESEND-CODE] Ошибка отправки в Telegram:", telegramError);
