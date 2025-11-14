@@ -35,6 +35,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Проверяем наличие username
+    if (!session.username) {
+      console.error("[API VERIFY-CODE] Username отсутствует в сессии");
+      return NextResponse.json(
+        { error: "Username не найден в сессии" },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const { code } = body;
 
