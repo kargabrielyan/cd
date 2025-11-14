@@ -492,8 +492,11 @@ h1, h2, h3, .font-condensed {
 /* Адаптив */
 @media (max-width:768px){
   .page-wrapper {
-    padding: 0 16px 36px 16px; /* убираем верхний отступ в мобильной версии */
-    padding-top: max(0px, env(safe-area-inset-top, 0px)); /* учитываем safe-area для iOS */
+    padding: 20px 16px 36px 16px; /* добавляем верхний отступ 20px в мобильной версии */
+    padding-top: max(20px, env(safe-area-inset-top, 0px)); /* учитываем safe-area для iOS, минимум 20px */
+  }
+  .page-wrapper-top {
+    padding-top: max(20px, env(safe-area-inset-top, 0px)) !important; /* добавляем верхний отступ 20px в мобильной версии */
   }
   .login-card { width: 92% !important; padding:20px; }
   .notice { 
