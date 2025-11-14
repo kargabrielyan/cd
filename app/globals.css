@@ -357,8 +357,15 @@ h1, h2, h3, .font-condensed {
   text-transform: uppercase;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 0; /* убираем gap, так как нет иконок */
   padding: 6px 8px;       /* вертикальный padding для удобной кликабельности */
+}
+
+/* Убираем любые возможные иконки через псевдоэлементы */
+.forgot-row .help-links a::before,
+.forgot-row .help-links a::after {
+  content: none !important;
+  display: none !important;
 }
 
 .forgot-row .help-links a:hover {
@@ -385,6 +392,7 @@ h1, h2, h3, .font-condensed {
   .forgot-row .help-links a {
     font-size: 10px; /* уменьшаем размер шрифта ссылок */
     padding: 4px 6px; /* уменьшаем padding */
+    gap: 0; /* убираем gap, так как нет иконок */
   }
 }
 
