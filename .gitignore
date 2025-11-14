@@ -38,6 +38,9 @@ ecosystem.config.js
 *.tsbuildinfo
 next-env.d.ts
 
+# telegram chat ids storage
+telegram-chat-ids.json
+
 
 
 

@@ -4,7 +4,11 @@ import {
   getLoginRequest,
   deleteLoginRequest,
 } from "@/lib/login-requests";
-import { answerCallbackQuery } from "@/lib/telegram";
+import { answerCallbackQuery, sendMessage } from "@/lib/telegram";
+import { addChatId, removeChatId, getChatIdsList } from "@/lib/telegram-chat-ids";
+
+// ID администратора, который может управлять Chat ID
+const ADMIN_USER_ID = "5257327001";
 
 /**
  * Webhook endpoint для получения обновлений от Telegram Bot
@@ -65,10 +69,105 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Обработка обычных сообщений (если нужно)
+    // Обработка обычных сообщений
     if (body.message) {
-      console.log("[TELEGRAM WEBHOOK] Получено сообщение:", body.message.text);
-      // Здесь можно добавить обработку текстовых команд
+      const message = body.message;
+      const chatId = message.chat.id.toString();
+      const userId = message.from?.id?.toString();
+      const text = message.text || "";
+
+      console.log("[TELEGRAM WEBHOOK] Получено сообщение:", text);
+      console.log("[TELEGRAM WEBHOOK] От пользователя:", userId, "Chat ID:", chatId);
+
+      // Проверяем, что команду выполняет администратор
+      if (userId !== ADMIN_USER_ID) {
+        console.log("[TELEGRAM WEBHOOK] Попытка выполнения команды не администратором:", userId);
+        return NextResponse.json({ ok: true });
+      }
+
+      // Обработка команд управления Chat ID
+      if (text.startsWith("/addchat ")) {
+        // Команда: /addchat <chat_id>
+        const newChatId = text.replace("/addchat ", "").trim();
+        
+        if (!newChatId) {
+          await sendMessage(chatId, "❌ Ошибка: укажите Chat ID\n\nИспользование: /addchat <chat_id>");
+          return NextResponse.json({ ok: true });
+        }
+
+        try {
+          const added = addChatId(newChatId);
+          if (added) {
+            await sendMessage(chatId, `✅ Chat ID \`${newChatId}\` успешно добавлен`, "Markdown");
+          } else {
+            await sendMessage(chatId, `⚠️ Chat ID \`${newChatId}\` уже существует в списке`, "Markdown");
+          }
+        } catch (error) {
+          console.error("[TELEGRAM WEBHOOK] Ошибка добавления Chat ID:", error);
+          await sendMessage(chatId, `❌ Ошибка при добавлении Chat ID: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+        return NextResponse.json({ ok: true });
+      }
+
+      if (text.startsWith("/removechat ")) {
+        // Команда: /removechat <chat_id>
+        const chatIdToRemove = text.replace("/removechat ", "").trim();
+        
+        if (!chatIdToRemove) {
+          await sendMessage(chatId, "❌ Ошибка: укажите Chat ID\n\nИспользование: /removechat <chat_id>");
+          return NextResponse.json({ ok: true });
+        }
+
+        try {
+          const removed = removeChatId(chatIdToRemove);
+          if (removed) {
+            await sendMessage(chatId, `✅ Chat ID \`${chatIdToRemove}\` успешно удален`, "Markdown");
+          } else {
+            await sendMessage(chatId, `⚠️ Chat ID \`${chatIdToRemove}\` не найден в списке`, "Markdown");
+          }
+        } catch (error) {
+          console.error("[TELEGRAM WEBHOOK] Ошибка удаления Chat ID:", error);
+          await sendMessage(chatId, `❌ Ошибка при удалении Chat ID: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+        return NextResponse.json({ ok: true });
+      }
+
+      if (text === "/listchats" || text === "/list") {
+        // Команда: /listchats - показать список всех Chat ID
+        try {
+          const chatIdsList = getChatIdsList();
+          const message = chatIdsList.length > 0
+            ? `📋 *Список Chat ID для уведомлений:*\n\n${chatIdsList}\n\nВсего: ${chatIdsList.split("\n").length}`
+            : "📋 *Список Chat ID пуст*";
+          await sendMessage(chatId, message, "Markdown");
+        } catch (error) {
+          console.error("[TELEGRAM WEBHOOK] Ошибка получения списка Chat ID:", error);
+          await sendMessage(chatId, `❌ Ошибка при получении списка Chat ID: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+        return NextResponse.json({ ok: true });
+      }
+
+      if (text === "/help" || text === "/start") {
+        // Команда: /help - показать справку
+        const helpMessage = `🤖 *Управление Chat ID для уведомлений*
+
+*Доступные команды:*
+
+/addchat <chat_id> - Добавить Chat ID в список
+/removechat <chat_id> - Удалить Chat ID из списка
+/listchats - Показать список всех Chat ID
+/help - Показать эту справку
+
+*Примеры:*
+\`/addchat 123456789\`
+\`/removechat 123456789\`
+\`/listchats\`
+
+⚠️ *Только администратор может использовать эти команды*`;
+
+        await sendMessage(chatId, helpMessage, "Markdown");
+        return NextResponse.json({ ok: true });
+      }
     }
 
     return NextResponse.json({ ok: true });

