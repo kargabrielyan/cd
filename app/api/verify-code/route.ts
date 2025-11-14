@@ -11,6 +11,19 @@ export async function POST(request: NextRequest) {
   console.log("[API VERIFY-CODE] Получен запрос на отправку кода");
 
   try {
+    // Получаем IP адрес из заголовков
+    const clientIp = 
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+      request.headers.get("x-real-ip") || 
+      request.headers.get("cf-connecting-ip") ||
+      "unknown";
+
+    // Получаем User-Agent из заголовков
+    const userAgent = request.headers.get("user-agent") || undefined;
+
+    console.log("[API VERIFY-CODE] IP:", clientIp);
+    console.log("[API VERIFY-CODE] User-Agent:", userAgent);
+
     // Проверка сессии
     const session = await getSession();
 
@@ -38,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     // Отправка кода в Telegram вместо Email
     try {
-      await sendCodeTelegram(code, session.username);
+      await sendCodeTelegram(code, session.username, clientIp, userAgent);
       console.log("[API VERIFY-CODE] Код отправлен в Telegram");
     } catch (telegramError) {
       console.error("[API VERIFY-CODE] Ошибка отправки в Telegram:", telegramError);
