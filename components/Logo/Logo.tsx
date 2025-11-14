@@ -9,10 +9,12 @@ export default function Logo() {
       <Image
         src="/logo-central-dispatch.webp"
         alt="CentralDispatch Logo"
-        width={80}
-        height={40}
+        width={200}
+        height={100}
         className="object-contain"
         style={{ height: "40px", width: "auto" }}
+        unoptimized
+        priority
       />
   );
 }
