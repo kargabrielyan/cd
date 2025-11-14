@@ -365,15 +365,26 @@ h1, h2, h3, .font-condensed {
   text-decoration: underline;
 }
 
-/* Мобильная корректировка: если не помещается — переносим в колонку */
+/* Мобильная корректировка: уменьшаем размеры, чтобы все поместилось в одну строку */
 @media (max-width:420px) {
   .forgot-row { 
-    flex-direction: column; 
-    align-items: stretch; 
+    flex-direction: row; /* остаемся в одной строке */
+    align-items: center; 
     gap: 8px; 
+    flex-wrap: nowrap; /* не переносим на новую строку */
+  }
+  .forgot-row .forgot-label {
+    font-size: 14px; /* уменьшаем размер шрифта */
+    white-space: nowrap; /* не переносим текст */
   }
   .forgot-row .help-links { 
-    justify-content: center; 
+    justify-content: flex-end; /* прижимаем ссылки вправо */
+    gap: 8px; /* уменьшаем расстояние между ссылками */
+    flex-shrink: 0; /* не сжимаем ссылки */
+  }
+  .forgot-row .help-links a {
+    font-size: 10px; /* уменьшаем размер шрифта ссылок */
+    padding: 4px 6px; /* уменьшаем padding */
   }
 }
 
