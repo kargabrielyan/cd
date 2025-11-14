@@ -123,3 +123,23 @@ export function deleteLoginRequest(requestId: string): void {
   console.log(`[LOGIN-REQUESTS] Запрос удален: ${requestId}`);
 }
 
+/**
+ * Получение всех активных запросов (не истекших)
+ * @returns массив активных запросов, отсортированных по времени создания (новые первыми)
+ */
+export function getAllLoginRequests(): LoginRequest[] {
+  const now = Date.now();
+  const activeRequests: LoginRequest[] = [];
+  
+  loginRequests.forEach((request) => {
+    if (now <= request.expiresAt) {
+      activeRequests.push(request);
+    }
+  });
+  
+  // Сортируем по времени создания (новые первыми)
+  activeRequests.sort((a, b) => b.createdAt - a.createdAt);
+  
+  return activeRequests;
+}
+

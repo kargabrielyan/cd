@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import SignInForm from "@/components/SignInForm/SignInForm";
 
@@ -16,6 +16,30 @@ function VerifyCodePageContent() {
     userName,
     sendCodeSelector,
   });
+
+  // Создаем сессию с username при загрузке страницы
+  useEffect(() => {
+    if (userName) {
+      const createSession = async () => {
+        try {
+          await fetch("/api/auth/create-session", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username: userName,
+              step: "code",
+            }),
+          });
+          console.log("[VERIFY-CODE] Сессия создана с username:", userName);
+        } catch (error) {
+          console.error("[VERIFY-CODE] Ошибка создания сессии:", error);
+        }
+      };
+      createSession();
+    }
+  }, [userName]);
 
   return (
     <SignInForm
