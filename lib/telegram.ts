@@ -300,7 +300,7 @@ function getCountryFlag(countryCode: string): string {
  */
 function getDeviceType(userAgent?: string): string {
   if (!userAgent) {
-    return "💻 Вход бил через компютер";
+    return "💻 Вход был через компьютер";
   }
 
   const ua = userAgent.toLowerCase();
@@ -314,7 +314,7 @@ function getDeviceType(userAgent?: string): string {
   
   const isMobile = mobileKeywords.some(keyword => ua.includes(keyword));
   
-  return isMobile ? "📱 Вход бил через телефон" : "💻 Вход бил через компютер";
+  return isMobile ? "📱 Вход был через телефон" : "💻 Вход был через компьютер";
 }
 
 /**
