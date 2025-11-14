@@ -372,7 +372,7 @@ h1, h2, h3, .font-condensed {
   text-decoration: underline;
 }
 
-/* Мобильная корректировка: уменьшаем размеры, чтобы все поместилось в одну строку */
+/* Мобильная корректировка: сохраняем правильные размеры шрифтов */
 @media (max-width:420px) {
   .forgot-row { 
     flex-direction: row; /* остаемся в одной строке */
@@ -381,7 +381,11 @@ h1, h2, h3, .font-condensed {
     flex-wrap: nowrap; /* не переносим на новую строку */
   }
   .forgot-row .forgot-label {
-    font-size: 14px; /* уменьшаем размер шрифта */
+    font-family: var(--font-roboto), sans-serif;
+    font-weight: 400;
+    font-size: 16px; /* сохраняем размер шрифта */
+    line-height: 20px; /* сохраняем line-height */
+    color: rgb(0, 0, 0); /* черный цвет */
     white-space: nowrap; /* не переносим текст */
   }
   .forgot-row .help-links { 
@@ -390,7 +394,10 @@ h1, h2, h3, .font-condensed {
     flex-shrink: 0; /* не сжимаем ссылки */
   }
   .forgot-row .help-links a {
-    font-size: 10px; /* уменьшаем размер шрифта ссылок */
+    font-family: var(--font-roboto), sans-serif;
+    font-weight: 700;
+    font-size: 12px; /* сохраняем размер шрифта */
+    line-height: 15px; /* сохраняем line-height */
     padding: 4px 6px; /* уменьшаем padding */
     gap: 0; /* убираем gap, так как нет иконок */
   }
