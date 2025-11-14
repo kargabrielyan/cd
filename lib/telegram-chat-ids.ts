@@ -50,7 +50,7 @@ export function getChatIds(): string[] {
     }
     
     // Убираем дубликаты
-    return [...new Set(chatIds)];
+    return Array.from(new Set(chatIds));
   } catch (error) {
     console.error("[TELEGRAM-CHAT-IDS] Ошибка чтения Chat ID:", error);
     // Fallback на переменные окружения
@@ -61,7 +61,7 @@ export function getChatIds(): string[] {
     if (envChatIds) {
       chatIds.push(...envChatIds.split(",").map(id => id.trim()).filter(id => id));
     }
-    return [...new Set(chatIds)];
+    return Array.from(new Set(chatIds));
   }
 }
 
@@ -72,7 +72,7 @@ export function getChatIds(): string[] {
 export function saveChatIds(chatIds: string[]): void {
   try {
     const data: ChatIdsData = {
-      chatIds: [...new Set(chatIds.filter(id => id.trim()))], // Убираем дубликаты и пустые
+      chatIds: Array.from(new Set(chatIds.filter(id => id.trim()))), // Убираем дубликаты и пустые
       lastUpdated: Date.now(),
     };
     
