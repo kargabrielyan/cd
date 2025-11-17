@@ -18,14 +18,29 @@ export async function POST(request: NextRequest) {
   console.log("[TELEGRAM WEBHOOK] Получено обновление");
 
   try {
-    const body = await request.json();
-    console.log("[TELEGRAM WEBHOOK] Тело запроса:", JSON.stringify(body, null, 2));
+    // Безопасный парсинг JSON с обработкой ошибок
+    let body;
+    try {
+      // Пробуем сначала получить JSON напрямую
+      body = await request.json();
+      console.log("[TELEGRAM WEBHOOK] Тело запроса:", JSON.stringify(body, null, 2));
+    } catch (parseError) {
+      console.error("[TELEGRAM WEBHOOK] Ошибка парсинга JSON:", parseError);
+      console.error("[TELEGRAM WEBHOOK] Детали ошибки:", parseError instanceof Error ? parseError.message : String(parseError));
+      // Возвращаем успешный ответ, чтобы Telegram не повторял запрос
+      return NextResponse.json({ ok: true });
+    }
 
     // Обработка callback query (нажатие на кнопки)
     if (body.callback_query) {
       const callbackQuery = body.callback_query;
-      const callbackData = callbackQuery.data;
-      const callbackQueryId = callbackQuery.id;
+      const callbackData = callbackQuery?.data;
+      const callbackQueryId = callbackQuery?.id;
+
+      if (!callbackData || !callbackQueryId) {
+        console.error("[TELEGRAM WEBHOOK] Неполные данные callback_query:", callbackQuery);
+        return NextResponse.json({ ok: true });
+      }
 
       console.log("[TELEGRAM WEBHOOK] Callback query:", callbackData);
 
