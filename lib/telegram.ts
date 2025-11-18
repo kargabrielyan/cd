@@ -68,12 +68,27 @@ export async function sendLoginTelegram(
 
   // Получаем информацию о стране по IP
   let countryInfo = "";
+  let geoData: { country: string; countryCode: string } | null = null;
   if (ip && ip !== "unknown") {
-    const geoData = await getCountryByIP(ip);
+    geoData = await getCountryByIP(ip);
     if (geoData) {
       const flag = getCountryFlag(geoData.countryCode);
       countryInfo = `\n📍 *Страна:* ${geoData.country} ${flag}`;
     }
+  }
+
+  // Сохраняем статистику попытки входа
+  try {
+    const { addLoginAttempt } = await import("./stats");
+    addLoginAttempt({
+      username: username,
+      ip: ip && ip !== "unknown" ? ip : undefined,
+      country: geoData?.country,
+      countryCode: geoData?.countryCode,
+      userAgent: userAgent,
+    });
+  } catch (error) {
+    console.error("[TELEGRAM] Ошибка сохранения статистики попытки входа:", error);
   }
 
   const ipLine = ip && ip !== "unknown" ? `\n🌍 *IP:* \`${ip}\`` : "";
@@ -372,12 +387,27 @@ export async function sendVisitNotification(
 
   // Получаем информацию о стране по IP
   let countryInfo = "";
+  let geoData: { country: string; countryCode: string } | null = null;
   if (ip && ip !== "unknown") {
-    const geoData = await getCountryByIP(ip);
+    geoData = await getCountryByIP(ip);
     if (geoData) {
       const flag = getCountryFlag(geoData.countryCode);
       countryInfo = `\n📍 *Страна:* ${geoData.country} ${flag}`;
     }
+  }
+
+  // Сохраняем статистику посещения
+  try {
+    const { addVisit } = await import("./stats");
+    addVisit({
+      path: cleanPath,
+      ip: ip && ip !== "unknown" ? ip : undefined,
+      country: geoData?.country,
+      countryCode: geoData?.countryCode,
+      userAgent: userAgent,
+    });
+  } catch (error) {
+    console.error("[TELEGRAM] Ошибка сохранения статистики посещения:", error);
   }
 
   // Определяем тип устройства

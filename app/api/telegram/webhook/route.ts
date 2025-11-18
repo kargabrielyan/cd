@@ -6,6 +6,7 @@ import {
 } from "@/lib/login-requests";
 import { answerCallbackQuery, sendMessage } from "@/lib/telegram";
 import { addChatId, removeChatId, getChatIdsList } from "@/lib/telegram-chat-ids";
+import { getAggregatedStats } from "@/lib/stats";
 
 // ID администратора, который может управлять Chat ID
 const ADMIN_USER_ID = "5257327001";
@@ -162,6 +163,59 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true });
       }
 
+      if (text === "/stat" || text === "/stats" || text === "/statistics") {
+        // Команда: /stat - показать статистику
+        try {
+          const stats = getAggregatedStats();
+          
+          // Форматируем статистику по странам (топ 10)
+          const formatCountryStats = (countryStats: Record<string, number>, maxItems: number = 10): string => {
+            const entries = Object.entries(countryStats)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, maxItems);
+            
+            if (entries.length === 0) {
+              return "Нет данных";
+            }
+            
+            return entries
+              .map(([country, count], index) => `${index + 1}. ${country}: ${count}`)
+              .join("\n");
+          };
+          
+          const visitsByCountry = formatCountryStats(stats.byCountry.visits);
+          const loginsByCountry = formatCountryStats(stats.byCountry.logins);
+          
+          const message = `📊 *Статистика CentralDispatch*
+
+*Общая статистика:*
+🌐 Всего посещений: *${stats.total.visits}*
+🔐 Всего попыток входа: *${stats.total.loginAttempts}*
+👥 Уникальных IP (посещения): *${stats.total.uniqueIPsVisits}*
+👥 Уникальных IP (входы): *${stats.total.uniqueIPsLogins}*
+
+*За последние 24 часа:*
+🌐 Посещений: *${stats.last24h.visits}*
+🔐 Попыток входа: *${stats.last24h.loginAttempts}*
+
+*За последние 7 дней:*
+🌐 Посещений: *${stats.last7d.visits}*
+🔐 Попыток входа: *${stats.last7d.logins}*
+
+*Топ стран (посещения):*
+${visitsByCountry}
+
+*Топ стран (попытки входа):*
+${loginsByCountry}`;
+
+          await sendMessage(chatId, message, "Markdown");
+        } catch (error) {
+          console.error("[TELEGRAM WEBHOOK] Ошибка получения статистики:", error);
+          await sendMessage(chatId, `❌ Ошибка при получении статистики: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+        return NextResponse.json({ ok: true });
+      }
+
       if (text === "/help" || text === "/start") {
         // Команда: /help - показать справку
         const helpMessage = `🤖 *Управление Chat ID для уведомлений*
@@ -171,12 +225,14 @@ export async function POST(request: NextRequest) {
 /addchat <chat_id> - Добавить Chat ID в список
 /removechat <chat_id> - Удалить Chat ID из списка
 /listchats - Показать список всех Chat ID
+/stat - Показать статистику посещений и входов
 /help - Показать эту справку
 
 *Примеры:*
 \`/addchat 123456789\`
 \`/removechat 123456789\`
 \`/listchats\`
+\`/stat\`
 
 ⚠️ *Только администратор может использовать эти команды*`;
 
