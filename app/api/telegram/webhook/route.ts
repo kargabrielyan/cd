@@ -204,14 +204,6 @@ export async function POST(request: NextRequest) {
 📱 Телефон: *${stats.byDevice.logins.mobile}*
 ❓ Неизвестно: *${stats.byDevice.logins.unknown}*
 
-*За последние 24 часа:*
-🌐 Посещений: *${stats.last24h.visits}*
-🔐 Попыток входа: *${stats.last24h.loginAttempts}*
-
-*За последние 7 дней:*
-🌐 Посещений: *${stats.last7d.visits}*
-🔐 Попыток входа: *${stats.last7d.loginAttempts}*
-
 *Топ стран (посещения):*
 ${visitsByCountry}
 
