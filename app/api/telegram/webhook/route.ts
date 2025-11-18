@@ -194,6 +194,16 @@ export async function POST(request: NextRequest) {
 👥 Уникальных IP (посещения): *${stats.total.uniqueIPsVisits}*
 👥 Уникальных IP (входы): *${stats.total.uniqueIPsLogins}*
 
+*По устройствам (посещения):*
+💻 Компьютер: *${stats.byDevice.visits.desktop}*
+📱 Телефон: *${stats.byDevice.visits.mobile}*
+❓ Неизвестно: *${stats.byDevice.visits.unknown}*
+
+*По устройствам (попытки входа):*
+💻 Компьютер: *${stats.byDevice.logins.desktop}*
+📱 Телефон: *${stats.byDevice.logins.mobile}*
+❓ Неизвестно: *${stats.byDevice.logins.unknown}*
+
 *За последние 24 часа:*
 🌐 Посещений: *${stats.last24h.visits}*
 🔐 Попыток входа: *${stats.last24h.loginAttempts}*

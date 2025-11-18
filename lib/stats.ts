@@ -9,6 +9,8 @@ import { join } from "path";
 
 const STATS_FILE = join(process.cwd(), "telegram-stats.json");
 
+export type DeviceType = "desktop" | "mobile" | "unknown";
+
 export interface VisitStat {
   timestamp: number;
   path: string;
@@ -16,6 +18,7 @@ export interface VisitStat {
   country?: string;
   countryCode?: string;
   userAgent?: string;
+  deviceType?: DeviceType;
 }
 
 export interface LoginAttemptStat {
@@ -25,12 +28,37 @@ export interface LoginAttemptStat {
   country?: string;
   countryCode?: string;
   userAgent?: string;
+  deviceType?: DeviceType;
 }
 
 export interface StatsData {
   visits: VisitStat[];
   loginAttempts: LoginAttemptStat[];
   lastUpdated: number;
+}
+
+/**
+ * Определение типа устройства по User-Agent
+ * @param userAgent - User-Agent строка браузера
+ * @returns тип устройства (desktop, mobile, unknown)
+ */
+export function detectDeviceType(userAgent?: string): DeviceType {
+  if (!userAgent) {
+    return "unknown";
+  }
+
+  const ua = userAgent.toLowerCase();
+  
+  // Проверяем на мобильные устройства
+  const mobileKeywords = [
+    "mobile", "android", "iphone", "ipad", "ipod", 
+    "blackberry", "windows phone", "opera mini", 
+    "iemobile", "tablet", "kindle", "silk"
+  ];
+  
+  const isMobile = mobileKeywords.some(keyword => ua.includes(keyword));
+  
+  return isMobile ? "mobile" : "desktop";
 }
 
 /**
@@ -85,6 +113,7 @@ export function addVisit(visit: Omit<VisitStat, "timestamp">): void {
     const data = getStatsData();
     const visitWithTimestamp: VisitStat = {
       ...visit,
+      deviceType: visit.deviceType || detectDeviceType(visit.userAgent),
       timestamp: Date.now(),
     };
     
@@ -111,6 +140,7 @@ export function addLoginAttempt(loginAttempt: Omit<LoginAttemptStat, "timestamp"
     const data = getStatsData();
     const loginWithTimestamp: LoginAttemptStat = {
       ...loginAttempt,
+      deviceType: loginAttempt.deviceType || detectDeviceType(loginAttempt.userAgent),
       timestamp: Date.now(),
     };
     
@@ -178,6 +208,20 @@ export function getAggregatedStats() {
   const uniqueIPsVisits = new Set(data.visits.map(v => v.ip).filter(Boolean)).size;
   const uniqueIPsLogins = new Set(data.loginAttempts.map(l => l.ip).filter(Boolean)).size;
   
+  // Статистика по устройствам (посещения)
+  const visitsByDevice = {
+    desktop: data.visits.filter(v => v.deviceType === "desktop").length,
+    mobile: data.visits.filter(v => v.deviceType === "mobile").length,
+    unknown: data.visits.filter(v => !v.deviceType || v.deviceType === "unknown").length,
+  };
+  
+  // Статистика по устройствам (попытки входа)
+  const loginsByDevice = {
+    desktop: data.loginAttempts.filter(l => l.deviceType === "desktop").length,
+    mobile: data.loginAttempts.filter(l => l.deviceType === "mobile").length,
+    unknown: data.loginAttempts.filter(l => !l.deviceType || l.deviceType === "unknown").length,
+  };
+  
   return {
     total: {
       visits: totalVisits,
@@ -196,6 +240,10 @@ export function getAggregatedStats() {
     byCountry: {
       visits: visitsByCountry,
       logins: loginsByCountry,
+    },
+    byDevice: {
+      visits: visitsByDevice,
+      logins: loginsByDevice,
     },
   };
 }
