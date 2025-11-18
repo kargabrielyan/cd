@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
 
 *За последние 7 дней:*
 🌐 Посещений: *${stats.last7d.visits}*
-🔐 Попыток входа: *${stats.last7d.logins}*
+🔐 Попыток входа: *${stats.last7d.loginAttempts}*
 
 *Топ стран (посещения):*
 ${visitsByCountry}
