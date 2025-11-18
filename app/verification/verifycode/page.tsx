@@ -54,7 +54,7 @@ function VerifyCodePageContent() {
       alignTop={true}
       buttonText="SUBMIT"
       showBottomButtons={true}
-      defaultUsername={userName || undefined}
+      defaultUsername={undefined}
     />
   );
 }

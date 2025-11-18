@@ -67,21 +67,28 @@ export default function SignInForm({
   // Загрузка сохраненного username при монтировании
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // Если это страница верификации кода, не загружаем username из localStorage
+      const isVerificationPage = usernameLabel === "Verification Code";
+      
       // Если передан defaultUsername, используем его
       if (defaultUsername) {
         setUsername(defaultUsername);
         console.log("[SIGNIN] Использован defaultUsername:", defaultUsername);
-      } else {
-        // Иначе загружаем из localStorage
+      } else if (!isVerificationPage) {
+        // Иначе загружаем из localStorage только если это не страница верификации
         const savedUsername = localStorage.getItem("rememberedUsername");
         if (savedUsername) {
           setUsername(savedUsername);
           setRememberUsername(true);
           console.log("[SIGNIN] Загружен сохраненный username:", savedUsername);
         }
+      } else {
+        // Для страницы верификации оставляем поле пустым
+        setUsername("");
+        console.log("[SIGNIN] Страница верификации - поле оставлено пустым");
       }
     }
-  }, [defaultUsername]);
+  }, [defaultUsername, usernameLabel]);
 
   /**
    * Polling статуса входа (long polling)
