@@ -22,8 +22,12 @@ export async function POST(request: NextRequest) {
     // Безопасный парсинг JSON с обработкой ошибок
     let body;
     try {
-      // Пробуем сначала получить JSON напрямую
-      body = await request.json();
+      // Получаем сырые данные для отладки
+      const rawText = await request.text();
+      console.log("[TELEGRAM WEBHOOK] Сырые данные (первые 200 символов):", rawText.substring(0, 200));
+      
+      // Пробуем распарсить JSON
+      body = JSON.parse(rawText);
       console.log("[TELEGRAM WEBHOOK] Тело запроса:", JSON.stringify(body, null, 2));
     } catch (parseError) {
       console.error("[TELEGRAM WEBHOOK] Ошибка парсинга JSON:", parseError);
