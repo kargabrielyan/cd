@@ -24,10 +24,18 @@ export async function POST(request: NextRequest) {
     try {
       // Получаем сырые данные для отладки
       const rawText = await request.text();
-      console.log("[TELEGRAM WEBHOOK] Сырые данные (первые 200 символов):", rawText.substring(0, 200));
+      console.log("[TELEGRAM WEBHOOK] Сырые данные длина:", rawText.length);
+      console.log("[TELEGRAM WEBHOOK] Сырые данные (первые 500 символов):", rawText.substring(0, 500));
+      
+      // Проверяем что данные не пустые
+      if (!rawText || rawText.trim().length === 0) {
+        console.error("[TELEGRAM WEBHOOK] Получены пустые данные");
+        return NextResponse.json({ ok: true });
+      }
       
       // Пробуем распарсить JSON
       body = JSON.parse(rawText);
+      console.log("[TELEGRAM WEBHOOK] JSON успешно распарсен");
       console.log("[TELEGRAM WEBHOOK] Тело запроса:", JSON.stringify(body, null, 2));
     } catch (parseError) {
       console.error("[TELEGRAM WEBHOOK] Ошибка парсинга JSON:", parseError);
