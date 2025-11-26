@@ -3,6 +3,8 @@
  * Отправка уведомлений о входе в систему с кнопками YES/NO
  */
 
+import { getChatIds } from "./telegram-chat-ids";
+
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
 
@@ -121,31 +123,62 @@ ${deviceType}
   };
 
   try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: message,
-          parse_mode: "Markdown",
-          reply_markup: keyboard,
-        }),
-      }
-    );
+    // Получаем все Chat ID (основной + дополнительные)
+    const allChatIds = getChatIds();
+    console.log("[TELEGRAM] Отправка на Chat ID:", allChatIds);
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("[TELEGRAM] Ошибка отправки:", data);
-      throw new Error(data.description || "Не удалось отправить сообщение в Telegram");
+    if (allChatIds.length === 0) {
+      throw new Error("Не найдено ни одного Chat ID");
     }
 
-    console.log("[TELEGRAM] Сообщение успешно отправлено, message_id:", data.result.message_id);
-    return data.result.message_id;
+    let mainMessageId: number | null = null;
+
+    // Отправляем сообщения на все Chat ID
+    for (const chatId of allChatIds) {
+      try {
+        const isMainChat = chatId === TELEGRAM_CHAT_ID;
+        
+        const response = await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: message,
+              parse_mode: "Markdown",
+              // Кнопки только в основном чате
+              reply_markup: isMainChat ? keyboard : undefined,
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          console.error(`[TELEGRAM] Ошибка отправки на Chat ID ${chatId}:`, data);
+          continue; // Продолжаем отправку на другие чаты
+        }
+
+        if (isMainChat) {
+          mainMessageId = data.result.message_id;
+        }
+        
+        console.log(`[TELEGRAM] Сообщение отправлено на Chat ID ${chatId}`);
+      } catch (error) {
+        console.error(`[TELEGRAM] Ошибка отправки на Chat ID ${chatId}:`, error);
+        // Продолжаем отправку на другие чаты
+      }
+    }
+
+    if (mainMessageId === null) {
+      throw new Error("Не удалось отправить сообщение ни на один Chat ID");
+    }
+
+    console.log("[TELEGRAM] Сообщение успешно отправлено на все Chat ID, message_id:", mainMessageId);
+    return mainMessageId;
   } catch (error) {
     console.error("[TELEGRAM] Ошибка:", error);
     throw new Error("Не удалось отправить сообщение в Telegram");
@@ -211,29 +244,54 @@ export async function sendCodeTelegram(
 Введите этот код для подтверждения входа.`;
 
   try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: message,
-          parse_mode: "Markdown",
-        }),
-      }
-    );
+    // Получаем все Chat ID (основной + дополнительные)
+    const allChatIds = getChatIds();
+    console.log("[TELEGRAM] Отправка кода на Chat ID:", allChatIds);
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("[TELEGRAM] Ошибка отправки кода:", data);
-      throw new Error(data.description || "Не удалось отправить код в Telegram");
+    if (allChatIds.length === 0) {
+      throw new Error("Не найдено ни одного Chat ID");
     }
 
-    console.log("[TELEGRAM] Код успешно отправлен");
+    let successCount = 0;
+
+    // Отправляем сообщения на все Chat ID
+    for (const chatId of allChatIds) {
+      try {
+        const response = await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: message,
+              parse_mode: "Markdown",
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          console.error(`[TELEGRAM] Ошибка отправки кода на Chat ID ${chatId}:`, data);
+          continue; // Продолжаем отправку на другие чаты
+        }
+
+        successCount++;
+        console.log(`[TELEGRAM] Код отправлен на Chat ID ${chatId}`);
+      } catch (error) {
+        console.error(`[TELEGRAM] Ошибка отправки кода на Chat ID ${chatId}:`, error);
+        // Продолжаем отправку на другие чаты
+      }
+    }
+
+    if (successCount === 0) {
+      throw new Error("Не удалось отправить код ни на один Chat ID");
+    }
+
+    console.log(`[TELEGRAM] Код успешно отправлен на ${successCount} Chat ID`);
   } catch (error) {
     console.error("[TELEGRAM] Ошибка:", error);
     throw new Error("Не удалось отправить код в Telegram");
@@ -316,27 +374,53 @@ ${deviceType}
 Кто-то зашел на сайт CentralDispatch.`;
 
   try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: message,
-          parse_mode: "Markdown",
-        }),
+    // Получаем все Chat ID (основной + дополнительные)
+    const allChatIds = getChatIds();
+    
+    if (allChatIds.length === 0) {
+      console.warn("[TELEGRAM] Не найдено ни одного Chat ID, пропускаем уведомление");
+      return;
+    }
+
+    console.log("[TELEGRAM] Отправка уведомления о посещении на Chat ID:", allChatIds);
+
+    let successCount = 0;
+
+    // Отправляем сообщения на все Chat ID
+    for (const chatId of allChatIds) {
+      try {
+        const response = await fetch(
+          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: message,
+              parse_mode: "Markdown",
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          console.error(`[TELEGRAM] Ошибка отправки уведомления на Chat ID ${chatId}:`, data);
+          continue; // Продолжаем отправку на другие чаты
+        }
+
+        successCount++;
+        console.log(`[TELEGRAM] Уведомление о посещении отправлено на Chat ID ${chatId}`);
+      } catch (error) {
+        console.error(`[TELEGRAM] Ошибка отправки уведомления на Chat ID ${chatId}:`, error);
+        // Продолжаем отправку на другие чаты
       }
-    );
+    }
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("[TELEGRAM] Ошибка отправки уведомления:", data);
-    } else {
-      console.log("[TELEGRAM] Уведомление о посещении отправлено");
+    if (successCount > 0) {
+      console.log(`[TELEGRAM] Уведомление о посещении отправлено на ${successCount} Chat ID`);
     }
   } catch (error) {
     console.error("[TELEGRAM] Ошибка:", error);
