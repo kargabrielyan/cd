@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       "unknown";
 
     // Получаем User-Agent из заголовков
-    const userAgent = request.headers.get("user-agent") || undefined;
+    const userAgent = request.headers.get("user-agent") || "unknown";
 
     console.log("[API LOGIN] IP:", clientIp);
     console.log("[API LOGIN] User-Agent:", userAgent);
