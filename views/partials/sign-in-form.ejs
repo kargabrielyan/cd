@@ -145,6 +145,7 @@
   let isWaitingTelegram = false;
   let currentRequestId = null;
   let isVerificationPage = <%= pageIsVerificationPage ? 'true' : 'false' %>;
+  let showPassword = <%= pageShowPassword ? 'true' : 'false' %>;
   let showVerificationError = false;
   let showLoginError = false;
 
@@ -201,7 +202,7 @@
       }
     }
 
-      if (!isVerificationPage && pageShowPassword && !password) {
+      if (!isVerificationPage && showPassword && !password) {
       errorMessage.textContent = 'Пожалуйста, заполните все поля';
       errorMessage.style.display = 'block';
       return;
