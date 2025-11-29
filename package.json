@@ -1,55 +1,26 @@
 {
-  "name": "central-dispatch",
-  "version": "0.1.0",
-  "private": true,
+  "name": "central-dispatch-express",
+  "version": "1.0.0",
+  "description": "CentralDispatch login system - Express version",
+  "main": "server.js",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "next": "^14.2.5",
+    "express": "^4.18.2",
+    "ejs": "^3.1.9",
+    "express-session": "^1.17.3",
+    "cookie-parser": "^1.4.6",
+    "body-parser": "^1.20.2",
     "nodemailer": "^6.9.13",
-    "cookie": "^0.7.2"
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
-    "typescript": "^5.5.4",
-    "@types/node": "^20.14.12",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@types/nodemailer": "^6.4.14",
-    "@types/cookie": "^0.6.0",
-    "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.40",
-    "tailwindcss": "^3.4.7",
-    "eslint": "^8.57.0",
-    "eslint-config-next": "^14.2.5"
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
